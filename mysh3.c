@@ -57,7 +57,7 @@ int exec_command(char *line) {
 
 int main(int argc, char **argv) {
 	pid_t pid;
-    char *input = NULL;
+    char *input;
     int input_size;
     char *exitshell = "exit";
     int status;    
@@ -68,10 +68,7 @@ int main(int argc, char **argv) {
           break;
         }
         pid = fork();
-        if (pid != 0) {
-          free(input);
-          input = NULL;
-        }
+        if (pid != 0) free(input);
         if(pid <0) { perror("Fork error"); exit(1); }
         if(pid==0) { // child process
           exec_command(input);
