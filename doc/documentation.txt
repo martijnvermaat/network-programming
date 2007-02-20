@@ -1,18 +1,25 @@
 ==============================================================================
-Questions
+  1 - Micro-Shell
 ==============================================================================
 
-(1)
+(Question 1)
 Our shell has to create two child processes after receiving a piped command,
 one processes for the writing command and one process for the reading command.
 One pipe has to be created for these processes to communicate (only in one
 direction). The parent shell process waits for both child processes to finish
 before reading the next command.
 
-(2)
+(Question 2)
 This is not possible, because the necessary exec() call will destroy the
 entire shell process (including any threads).
 
-(3)
+(Question 3)
 You cannot use the cd command in our shell. The cd commands in shells are
 built-in functions of these shells and not executable files.
+
+
+==============================================================================
+  2 - Synchronization
+==============================================================================
+
+(Question 4)

@@ -75,7 +75,7 @@ int main(int argc, char **argv) {
         if(pid <0) { perror("Fork error"); exit(1); }
         if(pid==0) { // child process
           exec_command(input);
-          //free(input);
+          //free(input);  // TODO: check rules for free()
           exit(1);
         } else { // parent process
           wait(&status); // wait for child to exit

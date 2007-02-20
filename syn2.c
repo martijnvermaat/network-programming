@@ -1,0 +1,1 @@
+#include <stdio.h> #include <unistd.h> void display(char *str) { char *tmp; for (tmp=str;*tmp;tmp++) { write(1,tmp,1); usleep(100); } } int main() { int i; if (fork()) { for (i=0;i<10;i++) display("ab"); wait(NULL); } else { for (i=0;i<10;i++) display("cd\n"); } return 0; }

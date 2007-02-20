@@ -43,7 +43,7 @@ int main(int argc, char **argv) {
         }
         pid = fork();
         if (pid != 0) {
-          free(input);
+          free(input);  // TODO: only free in parent
           input = NULL;
         }
         if(pid <0) { perror("Fork error"); exit(1); }
