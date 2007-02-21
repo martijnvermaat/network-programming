@@ -58,7 +58,7 @@ int exec_command(char *line) {
 int main(int argc, char **argv) {
 	pid_t pid;
     char *input = NULL;
-    int input_size;
+    size_t input_size = 0;
     char *exitshell = "exit";
     int status;    
 

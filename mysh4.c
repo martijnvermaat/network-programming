@@ -1,4 +1,5 @@
-#define _GNU_SOURCE
+#define DEBUG 1
+
 #include <stdio.h>
 #include <unistd.h>
 #include <signal.h>
@@ -7,12 +8,9 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
-#define DEBUG 1
-#define PROMPT_STRING "%s> "
-#define PIPE_DELIMITER " | "
-#define EXIT_STRING "exit"
-#define CD_STRING "cd"
 
 #ifdef DEBUG
 #define dprint printf
@@ -20,80 +18,199 @@
 #define dprint (void)
 #endif
 
-int count_params(char *line) {
-    int params = 1;
-    char *p;
-    
-    if(!line) { return 0; }
-    
-    for(p = line; *p != '\0'; p++) {
-        if(*p == ' ') {
-            params++;
-            //while(*(p+1) == ' ') {
-            //    p++;
-            //}
-        }
+
+int _malloc_counter = 0;
+
+void *counting_malloc(size_t siz) {
+    _malloc_counter++;
+    return malloc(siz);
+}
+
+void counting_free(void *mem) {
+    _malloc_counter--;
+    free(mem);
+}
+
+#define malloc counting_malloc
+#define free counting_free
+
+
+#define PROMPT_STRING "%s> "
+#define COMMAND_EXIT "exit"
+#define COMMAND_CD "cd"
+#define COMMAND_PIPE " | "
+
+
+/*
+  Count number of tokens seperated by one or more delimiter occurrences.
+*/
+int num_tokens (char *line, char delimiter) {
+
+    int count = 0;
+    char *position = line;
+
+    if (!line) {
+        return 0;
     }
-    return params;
+
+    // Find tokens while not at end of line
+    while (*position != '\0') {
+
+        // Skip delimiters
+        while (*position == delimiter) {
+            position++;
+        }
+
+        // Found token
+        if (*position != '\0') {
+
+            count++;
+
+            // Skip to end of token
+            while (*position != delimiter && *position != '\0') {
+                position++;
+            }
+
+        }
+
+    }
+
+    return count;
+
 }
 
-int exec_command(char *line) {
-  char **command;
-  int i = 0;
-  int cparams = count_params(line);
-  
-  if(strlen(line) < 1) {
-    // TODO: betere code ipv snelle check
-    dprint("Oei, te klein\n");
-    return 1;
-  }
 
-  command = (char **) malloc(sizeof(char *) * (cparams +1));
-  command[0] = strtok(line, " ");
-  for(i=1; i < cparams; i++) {
-    command[i] = strtok(NULL, " ");
-  }
-  command[cparams] = (char *) NULL;            
+/*
+  Get tokens seperated by one or more delimiter occurrences.
+  Original line will be modified!
+  Return number of tokens read.
+*/
+int get_tokens (char *line, char delimiter, char **tokens, size_t tokens_length) {
 
-  if(strrchr(command[0], '/') != NULL) {
-    command[0] = strrchr(command[0], '/')+1;
-  }
-  strcpy(line, strtok(line, " "));
-  fflush(stdout);
-  execvp(line, command);
-  perror(line); // only reached if execlp fails
-  free(command);
-  return 1;
+    int count = 0;
+    char *position = line;
+
+    if (!line) {
+        return 0;
+    }
+
+    // Find tokens while not at end of line
+    while (*position != '\0') {
+
+        // Check for overflow
+        if (count >= tokens_length) {
+            break;
+        }
+
+        // Skip delimiters
+        while (*position == delimiter) {
+            position++;
+        }
+
+        // Found token
+        if (*position != '\0') {
+
+            // Store token
+            tokens[count] = position;
+            count++;
+
+            // Skip to end of token
+            while (*position != delimiter && *position != '\0') {
+                position++;
+            }
+
+            // End of token
+            if (*position != '\0') {
+                *position = '\0';
+                position++;
+            }
+
+        }
+
+    }
+
+    return count;
+
 }
+
+
+/*
+  Execute the command with possible parameters seperated by spaces.
+*/
+int exec_command (char *line) {
+
+    char **arguments;
+    char *command;
+    int num_arguments;
+
+    if (!line) {
+        return -1;
+    }
+
+    num_arguments = num_tokens(line, ' ');
+
+    if (num_arguments < 1) {
+        return -1;
+    }
+
+    // Allocate array of pointers to arguments
+    arguments = (char **) malloc(sizeof(char *) * (num_arguments + 1));
+
+    get_tokens(line, ' ', arguments, num_arguments);
+
+    // End argument list with NULL pointer
+    arguments[num_arguments] = (char *) NULL;
+
+    // Store executable command
+    command = arguments[0];
+
+    // Skip preceding path for executable name
+    if(strrchr(arguments[0], '/') != NULL) {
+        arguments[0] = strrchr(arguments[0], '/') + 1;
+    }
+
+    execvp(command, arguments);
+
+    // Only reached on execvp error
+    perror(command);
+    free(arguments);
+
+    return -1;
+
+}
+
 
 int main(int argc, char **argv) {
-	pid_t pid;
+
+    pid_t pid;
     pid_t pid2;
     char *input = NULL;
     char *sink;
-    int input_size = 0;
+    size_t input_size = 0;
     int fd[2];
     int status;    
 
-    while(printf(PROMPT_STRING, getcwd(NULL, 0)) && (getline(&input, &input_size, stdin) != -1)) {  // TODO: in function, free na getcwd
+    // TODO: it seems we sometimes need an fflush before the readline
 
-        input[strlen(input)-1] = 0; // overwrite newline
+    while ((input = readline(PROMPT_STRING)) != NULL) {  // TODO: in function, free na getcwd(NULL, 0)
 
-        if(!strcmp(input, EXIT_STRING)) { // equal to exit
-          break;
+        // Check for exit command
+        if(!strcmp(input, COMMAND_EXIT)) {
+            break;
         }
 
-        if (strstr(input, CD_STRING) == input) {  // check if input starts with CD_STRING
-          // TODO: 'cd -', 'cd'
-          if (chdir(input + strlen(CD_STRING) + 1) == -1) {
-            perror("Could not change directory");
-          }
-          continue;
+        // Check for cd command
+        if (strstr(input, COMMAND_CD) == input) {
+            // TODO: 'cd -', 'cd'
+            if (chdir(input + strlen(COMMAND_CD) + 1) == -1) {
+                perror("Could not change directory");
+            }
+            continue;
         }
 
-        if ((sink = strstr(input, PIPE_DELIMITER)) != NULL) {
+        if ((sink = strstr(input, COMMAND_PIPE)) != NULL) {  // TODO: use get_tokens
           sink[0] = 0;  // \0 after left argument of pipe
-          sink = sink + strlen(PIPE_DELIMITER);  // skip pipe delimiter
+          sink = sink + strlen(COMMAND_PIPE);  // skip pipe delimiter
           if (pipe(fd) < 0) {
             perror("Could not create pipe");
             continue;

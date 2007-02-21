@@ -9,13 +9,29 @@
 #include <errno.h>
 
 #define DEBUG 1
-#define PIPE_DELIMITER " | "
 
 #ifdef DEBUG
 #define dprint printf
 #else
 #define dprint (void)
 #endif
+
+int _malloc_counter = 0;
+
+void *_counting_malloc(size_t siz) {
+    _malloc_counter++;
+    return malloc(siz);
+}
+
+void _counting_free(void *mem) {
+    _malloc_counter--;
+    free(mem);
+}
+
+#define malloc _counting_malloc
+#define free _counting_free
+
+#define PIPE_DELIMITER " | "
 
 int count_params(char *line) {
     int params = 1;
@@ -44,8 +60,6 @@ int exec_command(char *line) {
     return 1;
   }
 
-  dprint("line: %s\n", line);
-
   command = (char **) malloc(sizeof(char *) * (cparams +1));
   command[0] = strtok(line, " ");
   for(i=1; i < cparams; i++) {
@@ -57,9 +71,6 @@ int exec_command(char *line) {
     command[0] = strrchr(command[0], '/')+1;
   }
   strcpy(line, strtok(line, " "));
-  dprint("line: %s command: %s\n", line, command[0]);
-  dprint("line: %s command: %s\n", line, command[0]);
-  dprint("line: %s command: %s\n", line, command[0]);
   fflush(stdout);
   execvp(line, command);
   perror(line); // only reached if execlp fails
@@ -72,7 +83,7 @@ int main(int argc, char **argv) {
     pid_t pid2;
     char *input = NULL;
     char *sink;
-    int input_size = 0;
+    size_t input_size = 0;
     char *exitshell = "exit";
     int fd[2];
     int status;    
@@ -142,7 +153,11 @@ int main(int argc, char **argv) {
 
         }
 
+        dprint("Malloc counter is %d\n",_malloc_counter);
+        
     }
 
+    dprint("Ending malloc counter is %d\n",_malloc_counter);
     exit(0);
+
 }
