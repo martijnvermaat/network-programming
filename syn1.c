@@ -21,10 +21,10 @@ int main() {
 
   struct sembuf up = {0, 1, 0};
   struct sembuf down = {0, -1, 0};
-  int sem;
+  int mutex;
 
-  sem = semget(IPC_PRIVATE, 1, 0600);
-  semop(sem, &up, 1);  // Initialize for mutual exclusion
+  mutex = semget(IPC_PRIVATE, 1, 0600);
+  semop(mutex, &up, 1);  // Initialize for mutual exclusion
 
   pid = fork();
 
@@ -33,21 +33,21 @@ int main() {
   if (pid == 0) {
 
     for (i=0;i<10;i++) {
-      semop(sem, &down, 1);
+      semop(mutex, &down, 1);
       display("Bonjour monde\n");
-      semop(sem, &up, 1);
+      semop(mutex, &up, 1);
     }
 
   } else {
 
     for (i=0;i<10;i++) {
-      semop(sem, &down, 1);
+      semop(mutex, &down, 1);
       display("Hello world\n");
-      semop(sem, &up, 1);
+      semop(mutex, &up, 1);
     }
 
     wait(NULL);
-    semctl(sem, 0, IPC_RMID);
+    semctl(mutex, 0, IPC_RMID);
 
   }
 

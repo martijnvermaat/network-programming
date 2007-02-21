@@ -23,3 +23,29 @@ built-in functions of these shells and not executable files.
 ==============================================================================
 
 (Question 4)
+Mutual exclusion is needed here, because only one process at a time may be
+calling the display() function. Mutual exclusion can be implemented with a
+semaphore by initializing the semaphore to 1 and trying to DOWN() the
+semaphore before entering the mutual exclusive code and do an UP() afterwards.
+This way, only one process can be executing the mutual exclusive code at a
+time because DOWN() on a semaphore with value 0 will be blocking until UP() is
+called again.
+
+  DOWN()
+  mutex_code()
+  UP()
+
+(Question 5)
+The difference with the previous exercise is that the two mutual exclusive
+code blocks have to be executed alternatingly. In this case, events can be
+used by a process to wait for authorization and to authorize the other process
+to continue. Again, this can be implemented using semaphores, but this time we
+need two of them. The first semaphore implements the event that the first
+process may continue, while the second semaphore implements the event that the
+second process may continue.
+Each process authorizes the other process to continue execution by sending the
+appropriate event after it has executed the relevant part of his code.
+
+  DOWN(my_event)
+  mutex_code()
+  UP(his_event)
