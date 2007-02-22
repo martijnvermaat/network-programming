@@ -44,6 +44,10 @@ void counting_free(void *mem) {
 #define COMMAND_CD "cd"
 #define COMMAND_PIPE "|"
 
+#define NO_PIPE 0
+#define WRITE_TO_PIPE 1
+#define READ_FROM_PIPE 2
+
 
 /*
   Count number of tokens separated by one or more delimiter occurrences.
@@ -139,31 +143,16 @@ int get_tokens (char *line, char delimiter, char **tokens, int tokens_length) {
 
 
 /*
-  Execute the command with possible parameters separated by spaces.
+  Execute the command with possible parameter.
 */
-int exec_command (char *line) {
+void execute_command (char **arguments, int *fd, int pipe_action) {
 
-    char **arguments;
+    pid_t pid;
     char *command;
-    int num_arguments;
 
-    if (!line) {
-        return -1;
+    if (arguments[0] == NULL) {
+        return;
     }
-
-    num_arguments = num_tokens(line, COMMAND_SEPARATOR);
-
-    if (num_arguments < 1) {
-        return -1;
-    }
-
-    // Allocate array of pointers to arguments
-    arguments = (char **) malloc(sizeof(char *) * (num_arguments + 1));
-
-    get_tokens(line, COMMAND_SEPARATOR, arguments, num_arguments);
-
-    // End argument list with NULL pointer
-    arguments[num_arguments] = (char *) NULL;
 
     // Store executable command
     command = arguments[0];
@@ -173,13 +162,32 @@ int exec_command (char *line) {
         arguments[0] = strrchr(arguments[0], DIRECTORY_SEPARATOR) + 1;
     }
 
-    execvp(command, arguments);
+    pid = fork();
 
-    // Only reached on execvp error
-    perror(command);
-    free(arguments);
+    if (pid < 0) {
+        perror("Fork error");
+        exit(1);
+    }
 
-    return -1;
+    if (pid == 0) { // child process
+
+        if (pipe_action == WRITE_TO_PIPE) {
+            close(fd[0]);
+            close(STDOUT_FILENO);
+            dup2(fd[1], STDOUT_FILENO);
+        }
+
+        if (pipe_action == READ_FROM_PIPE) {
+            close(fd[1]);
+            close(STDIN_FILENO);
+            dup2(fd[0], STDIN_FILENO);
+        }
+
+        execvp(command, arguments);
+        perror(command);
+        exit(1);
+
+    }
 
 }
 
@@ -211,27 +219,12 @@ char *read_prompt() {
 
 
 /*
-  Check for an exit command.
+  Check for an exit command. Return 0 on succes, non-zero otherwise.
 */
-int do_exit(char *command) {
+int do_exit(char **arguments) {
 
-    char *position = command;
-
-    // Skip delimiters
-    while (*position == COMMAND_SEPARATOR) {
-        position++;
-    }
-
-    // Check for exit command
-    if (strstr(position, COMMAND_EXIT) == position) {
-
-        position += strlen(COMMAND_EXIT);
-
-        // Ending with \0 or delimiter
-        if ((*position == '\0') || (*position == COMMAND_SEPARATOR)) {
-            return 1;
-        }
-
+    if ((arguments[0] != NULL) && !strcmp(arguments[0], COMMAND_EXIT)) {
+        return 1;
     }
 
     return 0;
@@ -241,23 +234,15 @@ int do_exit(char *command) {
 
 /*
   Check for a cd command and possible directory parameter and change the current
-  working directory accordingly.
+  working directory accordingly. Return 0 on success, non-zero otherwise.
 */
-int do_cd(char *command) {
+int do_cd(char **arguments) {
 
-    char *tokenized_command;
-    char *tokens[2];
-    int num_tokens;
     char *homedir;
 
-    tokenized_command = (char *) malloc(strlen(command) + 1);
-    strcpy(tokenized_command, command);
-
-    num_tokens = get_tokens(tokenized_command, COMMAND_SEPARATOR, tokens, 2);
-
-    if ((num_tokens > 0) && !strcmp(tokens[0], COMMAND_CD)) {
-        if (num_tokens > 1) {
-            if (chdir(tokens[1]) == -1) {
+    if ((arguments[0] != NULL) && !strcmp(arguments[0], COMMAND_CD)) {
+        if (arguments[1] != NULL) {
+            if (chdir(arguments[1]) == -1) {
                 perror("Could not change directory");
             }
         } else {
@@ -267,128 +252,108 @@ int do_cd(char *command) {
                     perror("Could not change directory");
                 }
             } else {
-                printf("Could not read %s environment variable\n", ENVIRONMENT_HOMEDIR);
+                printf("Could not read %s environment variable\n",
+                       ENVIRONMENT_HOMEDIR);
             }
         }
-        free(tokenized_command);
         return 1;
     }
 
-
-    free(tokenized_command);
     return 0;
 
 }
 
 
 /*
-  Check the command for the presence of a pipe. If it is there, return the
-  location of the sink argument and create a pipe.
+  Check the command for the presence of a pipe. If it is there, truncate the
+  origininal arguments list at that point and return a pointer to the rest. Also
+  create a pipe.
 */
-char *do_pipe(char *command, int *fd) {
+char **create_pipe(char **arguments, int *fd) {
 
-    char *sink;
+    int i;
+    char **sink_arguments = NULL;
 
-    // Locate pipe character
-    if ((sink = strstr(command, COMMAND_PIPE)) != NULL) {
+    // Find a pipe command
+    for (i = 0; arguments[i] != NULL; i++) {
 
-        // End left argument of pipe with \0
-        *sink = 0;
+        if (!strcmp(arguments[i], COMMAND_PIPE)) {
 
-        // Skip pipe delimiter
-        sink = sink + strlen(COMMAND_PIPE);
+            // Truncate original argument list
+            arguments[i] = NULL;
 
-        // Create pipe
-        if (pipe(fd) < 0) {
-            perror("Could not create pipe");
-            exit(1);
+            // Next argument is start of sink arguments
+            sink_arguments = &arguments[i + 1];
+
+            // Create pipe
+            if (pipe(fd) < 0) {
+                perror("Could not create pipe");
+                exit(1);
+            }
+
+            break;
+
         }
-
-        return sink;
 
     }
 
-    return NULL;
+    return sink_arguments;
 
 }
 
 
 int main(int argc, char **argv) {
 
-    pid_t pid;
-    pid_t pid2;
     char *input;
-    char *sink;
-    int piped_command = 0;
     int fd[2];
+    int num_arguments;
+    char **arguments;
+    char **sink_arguments = NULL;
 
-    while ((input = read_prompt()) != NULL) {
+    while ((input = read_prompt()) != NULL) {  // TODO: free() input
 
-        if (do_exit(input)) {
+        num_arguments = num_tokens(input, COMMAND_SEPARATOR);
+
+        // Allocate array of pointers to arguments
+        // (size +1 because we end it with NULL)
+        arguments = (char **) malloc(sizeof(char *) * (num_arguments + 1));
+
+        get_tokens(input, COMMAND_SEPARATOR, arguments, num_arguments);
+
+        // End argument list with NULL pointer
+        arguments[num_arguments] = (char *) NULL;
+
+        if (do_exit(arguments)) {
             break;
         }
 
-        if (do_cd(input)) {
+        if (do_cd(arguments)) {
             continue;
         }
 
-        if ((sink = do_pipe(input, fd)) != NULL) {
-            piped_command = 1;
-        }
+        // TODO: seriously check if this refactoring of fork() inside
+        // execute_command is OK (returns, waits, etc)
 
-        pid = fork();
+        if ((sink_arguments = create_pipe(arguments, fd)) != NULL) {
 
-        if(pid <0) { perror("Fork error"); exit(1); }
-
-        if(pid==0) { // child process
-
-          if (sink != NULL) {
+            execute_command(arguments, fd, WRITE_TO_PIPE);
+            execute_command(sink_arguments, fd, READ_FROM_PIPE);
             close(fd[0]);
-            close(STDOUT_FILENO);
-            dup2(fd[1], STDOUT_FILENO);
-          }
+            close(fd[1]);
+            wait((void *) NULL);
 
-          exec_command(input);
-          exit(1);
+        } else {
 
-        } else { // parent process
-
-          if (sink != NULL) {
-
-            pid2 = fork();
-
-            if (pid2 == 0) { // child process
-
-              close(fd[1]);
-              close(STDIN_FILENO);
-              dup2(fd[0], STDIN_FILENO);
-
-              exec_command(sink);
-              exit(1);
-
-            } else { // parent process
-
-              close(fd[0]);
-              close(fd[1]);
-              waitpid(pid2, (void *) NULL, 0); // wait for child to exit
-              waitpid(pid, (void *) NULL, 0); // wait for child to exit
-
-            }
-
-          } else {
-
-              wait((void *) NULL);
-
-          }
-
-          if(input) {
-            free(input);
-            input = NULL;
-          }
+            execute_command(arguments, fd, NO_PIPE);
 
         }
+
+        wait((void *) NULL);
+
+        free(input);
 
     }
 
     exit(0);
+
 }
