@@ -35,14 +35,17 @@ void counting_free(void *mem) {
 #define free counting_free
 
 
-#define PROMPT_STRING "%s> "
+#define PROMPT_FORMAT "%s> "
+#define PROMPT_MAX_LENGTH 100
+#define DIRECTORY_SEPARATOR '/'
+#define COMMAND_SEPARATOR ' '
 #define COMMAND_EXIT "exit"
 #define COMMAND_CD "cd"
-#define COMMAND_PIPE " | "
+#define COMMAND_PIPE "|"
 
 
 /*
-  Count number of tokens seperated by one or more delimiter occurrences.
+  Count number of tokens separated by one or more delimiter occurrences.
 */
 int num_tokens (char *line, char delimiter) {
 
@@ -81,9 +84,9 @@ int num_tokens (char *line, char delimiter) {
 
 
 /*
-  Get tokens seperated by one or more delimiter occurrences.
+  Get tokens separated by one or more delimiter occurrences.
   Original line will be modified!
-  Return number of tokens read.
+  Return number of tokens read (max of tokens_length).
 */
 int get_tokens (char *line, char delimiter, char **tokens, size_t tokens_length) {
 
@@ -135,7 +138,7 @@ int get_tokens (char *line, char delimiter, char **tokens, size_t tokens_length)
 
 
 /*
-  Execute the command with possible parameters seperated by spaces.
+  Execute the command with possible parameters separated by spaces.
 */
 int exec_command (char *line) {
 
@@ -147,7 +150,7 @@ int exec_command (char *line) {
         return -1;
     }
 
-    num_arguments = num_tokens(line, ' ');
+    num_arguments = num_tokens(line, COMMAND_SEPARATOR);
 
     if (num_arguments < 1) {
         return -1;
@@ -156,7 +159,7 @@ int exec_command (char *line) {
     // Allocate array of pointers to arguments
     arguments = (char **) malloc(sizeof(char *) * (num_arguments + 1));
 
-    get_tokens(line, ' ', arguments, num_arguments);
+    get_tokens(line, COMMAND_SEPARATOR, arguments, num_arguments);
 
     // End argument list with NULL pointer
     arguments[num_arguments] = (char *) NULL;
@@ -165,8 +168,8 @@ int exec_command (char *line) {
     command = arguments[0];
 
     // Skip preceding path for executable name
-    if(strrchr(arguments[0], '/') != NULL) {
-        arguments[0] = strrchr(arguments[0], '/') + 1;
+    if(strrchr(arguments[0], DIRECTORY_SEPARATOR) != NULL) {
+        arguments[0] = strrchr(arguments[0], DIRECTORY_SEPARATOR) + 1;
     }
 
     execvp(command, arguments);
@@ -180,41 +183,117 @@ int exec_command (char *line) {
 }
 
 
+/*
+  Print the prompt and read a line of input.
+  Return this line or NULL in case of EOF.
+*/
+char *read_prompt() {
+
+    char prompt[PROMPT_MAX_LENGTH];
+    char *current_working_dir;
+
+    current_working_dir = getcwd(NULL, 0);
+    snprintf(prompt, sizeof(prompt), PROMPT_FORMAT, current_working_dir);
+    free(current_working_dir);
+
+    return readline(prompt);
+
+}
+
+
+int do_exit(char *command) {
+    return !strcmp(command, COMMAND_EXIT);
+}
+
+
+/*
+  Check for a cd command and possible directory parameter and change the current
+  working directory accordingly.
+*/
+int do_cd(char *command) {
+
+    char *tokenized_command;
+    char *tokens[2];
+    int num_tokens;
+
+    tokenized_command = (char *) malloc(strlen(command) + 1);
+    strcpy(tokenized_command, command);
+
+    num_tokens = get_tokens(tokenized_command, COMMAND_SEPARATOR, tokens, 2);
+
+    if ((num_tokens > 0) && !strcmp(tokens[0], COMMAND_CD)) {
+        if (num_tokens > 1) {
+            if (chdir(tokens[1]) == -1) {
+                perror("Could not change directory");
+            }
+        } else {
+            // TODO: cd to home dir
+            printf("The cd command expects one argument\n");
+        }
+        free(tokenized_command);
+        return 1;
+    }
+
+
+    free(tokenized_command);
+    return 0;
+
+}
+
+
+/*
+  Check the command for the presence of a pipe. If it is there, return the
+  location of the sink argument and create a pipe.
+*/
+char *do_pipe(char *command, int *fd) {
+
+    char *sink;
+
+    // Locate pipe character
+    if ((sink = strstr(command, COMMAND_PIPE)) != NULL) {
+
+        // End left argument of pipe with \0
+        *sink = 0;
+
+        // Skip pipe delimiter
+        sink = sink + strlen(COMMAND_PIPE);
+
+        // Create pipe
+        if (pipe(fd) < 0) {
+            perror("Could not create pipe");
+            exit(1);
+        }
+
+        return sink;
+
+    }
+
+    return NULL;
+
+}
+
+
 int main(int argc, char **argv) {
 
     pid_t pid;
     pid_t pid2;
-    char *input = NULL;
+    char *input;
     char *sink;
-    size_t input_size = 0;
+    int piped_command = 0;
     int fd[2];
-    int status;    
 
-    // TODO: it seems we sometimes need an fflush before the readline
+    while ((input = read_prompt()) != NULL) {
 
-    while ((input = readline(PROMPT_STRING)) != NULL) {  // TODO: in function, free na getcwd(NULL, 0)
-
-        // Check for exit command
-        if(!strcmp(input, COMMAND_EXIT)) {
+        if (do_exit(input)) {
             break;
         }
 
-        // Check for cd command
-        if (strstr(input, COMMAND_CD) == input) {
-            // TODO: 'cd -', 'cd'
-            if (chdir(input + strlen(COMMAND_CD) + 1) == -1) {
-                perror("Could not change directory");
-            }
+        if (do_cd(input)) {
             continue;
         }
 
-        if ((sink = strstr(input, COMMAND_PIPE)) != NULL) {  // TODO: use get_tokens
-          sink[0] = 0;  // \0 after left argument of pipe
-          sink = sink + strlen(COMMAND_PIPE);  // skip pipe delimiter
-          if (pipe(fd) < 0) {
-            perror("Could not create pipe");
-            continue;
-          }
+        if ((sink = do_pipe(input, fd)) != NULL) {
+            piped_command = 1;
         }
 
         pid = fork();
@@ -251,8 +330,8 @@ int main(int argc, char **argv) {
 
               close(fd[0]);
               close(fd[1]);
-              waitpid(pid2, &status, 0); // wait for child to exit
-              waitpid(pid, &status, 0); // wait for child to exit
+              waitpid(pid2, (void *) NULL, 0); // wait for child to exit
+              waitpid(pid, (void *) NULL, 0); // wait for child to exit
 
             }
 
@@ -262,7 +341,6 @@ int main(int argc, char **argv) {
             free(input);
             input = NULL;
           }
-          input_size = 0;
 
         }
 
