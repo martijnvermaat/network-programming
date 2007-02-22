@@ -35,9 +35,10 @@ void counting_free(void *mem) {
 #define free counting_free
 
 
+#define ENVIRONMENT_HOMEDIR "HOME"
+#define DIRECTORY_SEPARATOR '/'
 #define PROMPT_FORMAT "%s> "
 #define PROMPT_MAX_LENGTH 100
-#define DIRECTORY_SEPARATOR '/'
 #define COMMAND_SEPARATOR ' '
 #define COMMAND_EXIT "exit"
 #define COMMAND_CD "cd"
@@ -215,6 +216,7 @@ int do_cd(char *command) {
     char *tokenized_command;
     char *tokens[2];
     int num_tokens;
+    char *homedir;
 
     tokenized_command = (char *) malloc(strlen(command) + 1);
     strcpy(tokenized_command, command);
@@ -227,8 +229,14 @@ int do_cd(char *command) {
                 perror("Could not change directory");
             }
         } else {
-            // TODO: cd to home dir
-            printf("The cd command expects one argument\n");
+            homedir = getenv(ENVIRONMENT_HOMEDIR);
+            if (homedir) {
+                if (chdir(homedir) == -1) {
+                    perror("Could not change directory");
+                }
+            } else {
+                printf("Could not read %s environment variable\n", ENVIRONMENT_HOMEDIR);
+            }
         }
         free(tokenized_command);
         return 1;
