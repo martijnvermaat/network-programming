@@ -89,7 +89,7 @@ int num_tokens (char *line, char delimiter) {
   Original line will be modified!
   Return number of tokens read (max of tokens_length).
 */
-int get_tokens (char *line, char delimiter, char **tokens, size_t tokens_length) {
+int get_tokens (char *line, char delimiter, char **tokens, int tokens_length) {
 
     int count = 0;
     char *position = line;
@@ -192,18 +192,50 @@ char *read_prompt() {
 
     char prompt[PROMPT_MAX_LENGTH];
     char *current_working_dir;
+    char *line;
 
     current_working_dir = getcwd(NULL, 0);
     snprintf(prompt, sizeof(prompt), PROMPT_FORMAT, current_working_dir);
     free(current_working_dir);
 
-    return readline(prompt);
+    line = readline(prompt);
+
+    // Go to a new line on EOF
+    if (!line) {
+        printf("\n");
+    }
+
+    return line;
 
 }
 
 
+/*
+  Check for an exit command.
+*/
 int do_exit(char *command) {
-    return !strcmp(command, COMMAND_EXIT);
+
+    char *position = command;
+
+    // Skip delimiters
+    while (*position == COMMAND_SEPARATOR) {
+        position++;
+    }
+
+    // Check for exit command
+    if (strstr(position, COMMAND_EXIT) == position) {
+
+        position += strlen(COMMAND_EXIT);
+
+        // Ending with \0 or delimiter
+        if ((*position == '\0') || (*position == COMMAND_SEPARATOR)) {
+            return 1;
+        }
+
+    }
+
+    return 0;
+
 }
 
 
@@ -342,6 +374,10 @@ int main(int argc, char **argv) {
               waitpid(pid, (void *) NULL, 0); // wait for child to exit
 
             }
+
+          } else {
+
+              wait((void *) NULL);
 
           }
 
