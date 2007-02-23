@@ -2,6 +2,7 @@
 
 #include <stdio.h>
 #include <unistd.h>
+#include <error.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -165,8 +166,7 @@ void execute_command (char **arguments, int *fd, int pipe_action) {
     pid = fork();
 
     if (pid < 0) {
-        perror("Fork error");
-        exit(1);
+        error(1, errno, "Unable to fork");
     }
 
     if (pid == 0) { // child process
@@ -287,8 +287,7 @@ char **create_pipe(char **arguments, int *fd) {
 
             // Create pipe
             if (pipe(fd) < 0) {
-                perror("Could not create pipe");
-                exit(1);
+                error(1, errno, "Could not create pipe");
             }
 
             break;
@@ -310,13 +309,17 @@ int main(int argc, char **argv) {
     char **arguments;
     char **sink_arguments = NULL;
 
-    while ((input = read_prompt()) != NULL) {  // TODO: free() input
+    while ((input = read_prompt()) != NULL) {
 
         num_arguments = num_tokens(input, COMMAND_SEPARATOR);
 
         // Allocate array of pointers to arguments
         // (size +1 because we end it with NULL)
         arguments = (char **) malloc(sizeof(char *) * (num_arguments + 1));
+
+        if (arguments == NULL) {
+            error(1, errno, "Unable to allocate necessary memory");
+        }
 
         get_tokens(input, COMMAND_SEPARATOR, arguments, num_arguments);
 
