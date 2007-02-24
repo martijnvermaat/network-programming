@@ -166,7 +166,7 @@ void execute_command (char **arguments, int *fd, int pipe_action) {
     pid = fork();
 
     if (pid < 0) {
-        error(1, errno, "Unable to fork");
+        error(EXIT_FAILURE, errno, "Unable to fork");
     }
 
     if (pid == 0) { // child process
@@ -185,7 +185,7 @@ void execute_command (char **arguments, int *fd, int pipe_action) {
 
         execvp(command, arguments);
         perror(command);
-        exit(1);
+        exit(EXIT_FAILURE);
 
     }
 
@@ -202,13 +202,19 @@ char *read_prompt() {
     char *current_working_dir;
     char *line;
 
+    /*
+      The prompt is simply truncated in the case of a very long home directory
+      but this is okay for now.
+    */
     current_working_dir = getcwd(NULL, 0);
     snprintf(prompt, sizeof(prompt), PROMPT_FORMAT, current_working_dir);
     free(current_working_dir);
 
+    // Cool, we get some line editing and tab completion for free :)
     line = readline(prompt);
 
     // Go to a new line on EOF
+    // TODO: decide on style; sometimes we use !line, sometimes line == NULL
     if (!line) {
         printf("\n");
     }
@@ -287,7 +293,7 @@ char **create_pipe(char **arguments, int *fd) {
 
             // Create pipe
             if (pipe(fd) < 0) {
-                error(1, errno, "Could not create pipe");
+                error(EXIT_FAILURE, errno, "Cannot create pipe");
             }
 
             break;
@@ -313,12 +319,15 @@ int main(int argc, char **argv) {
 
         num_arguments = num_tokens(input, COMMAND_SEPARATOR);
 
-        // Allocate array of pointers to arguments
-        // (size +1 because we end it with NULL)
+        /*
+          Allocate array of pointers to arguments with a size of num_arguments
+          + 1 because we end it with a NULL pointer.
+          Actually, this is only because it makes it easy to call execvp().
+        */
         arguments = (char **) malloc(sizeof(char *) * (num_arguments + 1));
 
         if (arguments == NULL) {
-            error(1, errno, "Unable to allocate necessary memory");
+            error(EXIT_FAILURE, errno, "Unable to allocate necessary memory");
         }
 
         get_tokens(input, COMMAND_SEPARATOR, arguments, num_arguments);
@@ -357,6 +366,6 @@ int main(int argc, char **argv) {
 
     }
 
-    exit(0);
+    exit(EXIT_SUCCESS);
 
 }
