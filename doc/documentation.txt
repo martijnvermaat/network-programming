@@ -49,3 +49,22 @@ appropriate event after it has executed the relevant part of his code.
   DOWN(my_event)
   mutex_code()
   UP(his_event)
+
+
+==============================================================================
+  3 - pthreads
+==============================================================================
+
+(Question 6)
+We could also have used semaphores in the pthread version, just like we did in
+the version with multiple processes. However, it would be a strange thing to
+do: allocate shared memory for a semaphore while the two threads share most of
+their variables anyway.
+
+
+==============================================================================
+  4 - Java threads
+==============================================================================
+
+(Question 7)
+Yes.
