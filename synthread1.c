@@ -2,48 +2,51 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <sys/types.h>
-#include <sys/wait.h>
 #include <pthread.h>
 
+pthread_mutex_t mutex;
+
 void display(char *str) {
-  char *tmp;
-  for (tmp=str;*tmp;tmp++) {
-    write(1,tmp,1);
-    usleep(100);
-  }
+    char *tmp;
+    for (tmp=str;*tmp;tmp++) {
+        write(1,tmp,1);
+        usleep(100);
+    }
 }
 
 void *bonjour(void *param) {
+    int i;
     for (i=0;i<10;i++) {
-      semop(mutex, &down, 1);
-      display("Bonjour monde\n");
-      semop(mutex, &up, 1);
+        pthread_mutex_lock(&mutex);
+        display("Bonjour monde\n");
+        pthread_mutex_unlock(&mutex);
     }
     return NULL;
 }
 
 int main() {
 
-  int i;
-  pthread_t id;
-  pthread_attr_t attr;
+    int i;
+    pthread_t id;
+    pthread_attr_t attr;
 
-  int mutex;
+    pthread_mutexattr_t mutex_attr;
+    pthread_mutexattr_init(&mutex_attr);
+    pthread_mutex_init(&mutex, &mutex_attr);
 
-  mutex = semget(IPC_PRIVATE, 1, 0600);
-  semop(mutex, &up, 1);  // Initialize for mutual exclusion
+    pthread_attr_init(&attr);
+    pthread_create(&id, &attr, bonjour, (void *) NULL);
 
-  pthread_attr_init(&attr);
-  pthread_create(&id, &attr, bonjour, (void *) NULL);
+    for (i=0;i<10;i++) {
+        pthread_mutex_lock(&mutex);
+        display("Hello world\n");
+        pthread_mutex_unlock(&mutex);
+    }
 
-  for (i=0;i<10;i++) {
-    semop(mutex, &down, 1);
-    display("Hello world\n");
-    semop(mutex, &up, 1);
-  }
+    pthread_join(id, NULL);
 
-  pthread_join(id, NULL);
+    pthread_mutex_destroy(&mutex);
 
-  return 0;
+    return 0;
 
 }

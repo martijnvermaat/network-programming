@@ -7,11 +7,11 @@
 #include <sys/sem.h>
 
 void display(char *str) {
-  char *tmp;
-  for (tmp=str;*tmp;tmp++) {
-    write(1,tmp,1);
-    usleep(100);
-  }
+    char *tmp;
+    for (tmp=str;*tmp;tmp++) {
+        write(1,tmp,1);
+        usleep(100);
+    }
 }
 
 int main() {
