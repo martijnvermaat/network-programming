@@ -1,18 +1,17 @@
 CFLAGS  = -g -Wall -O3
-LDFLAGS = -lreadline
-LDPTHREAD = -lpthread
+LDFLAGS =
+LDSYNTHREAD = -lpthread
+JAVAC = /usr/bin/javac
 
-JAVAC = /usr/local/bin/javac
+all: myshell syn synthread java
 
-all: myshells syns synthreads java
-
-myshells: mysh1 mysh2 mysh3 mysh4
-syns: syn1 syn2
-synthreads: synthread1 synthread2
+myshell: mysh1 mysh2 mysh3 mysh4
+syn: syn1 syn2
+synthread: synthread1 synthread2
 java: syn1.class syn2.class
 
 synthread%: synthread%.c
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LDPTHREAD)
+	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LDSYNTHREAD)
 
 %: %.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)

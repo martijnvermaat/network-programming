@@ -9,8 +9,6 @@
 #include <string.h>
 #include <stdlib.h>
 #include <errno.h>
-#include <readline/readline.h>
-#include <readline/history.h>
 
 
 #ifdef DEBUG
@@ -36,10 +34,10 @@ void counting_free(void *mem) {
 #define free counting_free
 
 
+#define READ_BUFFER_SIZE 4
 #define ENVIRONMENT_HOMEDIR "HOME"
 #define DIRECTORY_SEPARATOR '/'
 #define PROMPT_FORMAT "%s> "
-#define PROMPT_MAX_LENGTH 100
 #define COMMAND_SEPARATOR ' '
 #define COMMAND_EXIT "exit"
 #define COMMAND_CD "cd"
@@ -195,31 +193,63 @@ void execute_command (char **arguments, int *fd, int pipe_action) {
 /*
   Print the prompt and read a line of input.
   Return this line or NULL in case of EOF.
+  TODO: This is still very ugly!
 */
 char *read_prompt() {
 
-    char prompt[PROMPT_MAX_LENGTH];
+    char *buffer; //[READ_BUFFER_SIZE];
+    int buffer_size;
+    char *p;
     char *current_working_dir;
-    char *line;
 
-    /*
-      The prompt is simply truncated in the case of a very long home directory
-      but this is okay for now.
-    */
+    int character;
+    int length = 0;
+
+    // Print prompt
     current_working_dir = getcwd(NULL, 0);
-    snprintf(prompt, sizeof(prompt), PROMPT_FORMAT, current_working_dir);
+    printf(PROMPT_FORMAT, current_working_dir);
     free(current_working_dir);
 
-    // Cool, we get some line editing and tab completion for free :)
-    line = readline(prompt);
+    buffer = malloc(READ_BUFFER_SIZE);
+    buffer_size = READ_BUFFER_SIZE;
+    p = buffer;
+
+    while (1) {
+
+        character = fgetc(stdin);
+
+        if (character == EOF) {
+            if (length > 0) {
+                *p = '\0';
+            } else {
+                free(buffer);
+                buffer = NULL;
+            }
+            break;
+        } else if (character == '\n') {
+            *p = '\0';
+            break;
+        }
+
+        *p = character;
+        p++;
+        length++;
+
+        if (length >= buffer_size) {
+            buffer_size += READ_BUFFER_SIZE;
+            buffer = realloc(buffer, buffer_size);
+            p = buffer + length;
+        }
+
+    }
 
     // Go to a new line on EOF
     // TODO: decide on style; sometimes we use !line, sometimes line == NULL
-    if (!line) {
+    if (!buffer) {
         printf("\n");
     }
 
-    return line;
+    return buffer;
 
 }
 
