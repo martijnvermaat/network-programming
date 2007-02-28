@@ -14,7 +14,7 @@ synthread%: synthread%.c
 	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS) $(LDSYNTHREAD)
 
 %: %.c
-	$(CC) $(CFLAGS) -o $@ $< $(LDFLAGS)
+	$(CC) $(CFLAGS) -o $@ $<
 
 %.class: %.java
 	$(JAVAC) $<

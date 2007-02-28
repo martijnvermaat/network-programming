@@ -6,7 +6,32 @@ public class syn2 extends Thread {
     public syn2 (String message) {
         this.message = message;
     }
+    
+    private static class Display {
 
+        private void display (String s) {
+            for (int i = 0; i < s.length(); i++) {
+                System.out.print(s.charAt(i));
+                try {
+                    Thread.sleep(0, 100);
+                } catch (InterruptedException e) {
+                    System.out.println("Hooo!");
+                }
+            }
+        }
+
+        synchronized public void synchronizedDisplay (String s) throws InterruptedException {
+            if (s.equals("ab")) {
+                wait();
+                display(s);
+                notify();
+            } else {
+                notify();
+                wait();
+                display(s);
+            }
+        }
+    }
 
     public void run () {
 
@@ -30,5 +55,4 @@ public class syn2 extends Thread {
         cd.start();
 
     }
-
 }
