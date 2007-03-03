@@ -2,7 +2,6 @@
 
 #include <stdio.h>
 #include <unistd.h>
-#include <error.h>
 #include <signal.h>
 #include <sys/types.h>
 #include <sys/wait.h>
@@ -77,13 +76,9 @@ int num_tokens (char *line, char delimiter) {
             while (*position != delimiter && *position != '\0') {
                 position++;
             }
-
         }
-
     }
-
     return count;
-
 }
 
 
@@ -131,13 +126,9 @@ int get_tokens (char *line, char delimiter, char **tokens, int tokens_length) {
                 *position = '\0';
                 position++;
             }
-
         }
-
     }
-
     return count;
-
 }
 
 
@@ -164,7 +155,8 @@ void execute_command (char **arguments, int *fd, int pipe_action) {
     pid = fork();
 
     if (pid < 0) {
-        error(EXIT_FAILURE, errno, "Unable to fork");
+        perror("Unable to fork");
+        exit(EXIT_FAILURE);
     }
 
     if (pid == 0) { // child process
@@ -184,22 +176,19 @@ void execute_command (char **arguments, int *fd, int pipe_action) {
         execvp(command, arguments);
         perror(command);
         exit(EXIT_FAILURE);
-
     }
-
 }
 
 
 /*
   Print the prompt and read a line of input.
   Return this line or NULL in case of EOF.
-  TODO: This is still very ugly!
 */
 char *read_prompt() {
 
     char *buffer; //[READ_BUFFER_SIZE];
     int buffer_size;
-    char *p;
+    char *p; // pointer to current character in buffer
     char *current_working_dir;
 
     int character;
@@ -215,13 +204,12 @@ char *read_prompt() {
     p = buffer;
 
     while (1) {
-
         character = fgetc(stdin);
 
         if (character == EOF) {
-            if (length > 0) {
+            if (length > 0) { // we have a string to return
                 *p = '\0';
-            } else {
+            } else { // no string, return null
                 free(buffer);
                 buffer = NULL;
             }
@@ -231,10 +219,11 @@ char *read_prompt() {
             break;
         }
 
-        *p = character;
+        *p = character; // put character in buffer
         p++;
         length++;
 
+        // check if we need to resize the buffer
         if (length >= buffer_size) {
             buffer_size += READ_BUFFER_SIZE;
             buffer = realloc(buffer, buffer_size);
@@ -244,18 +233,16 @@ char *read_prompt() {
     }
 
     // Go to a new line on EOF
-    // TODO: decide on style; sometimes we use !line, sometimes line == NULL
     if (!buffer) {
         printf("\n");
     }
 
     return buffer;
-
 }
 
 
 /*
-  Check for an exit command. Return 0 on succes, non-zero otherwise.
+  Check for an exit command. Return 1 on succes, 0 otherwise.
 */
 int do_exit(char **arguments) {
 
@@ -264,7 +251,6 @@ int do_exit(char **arguments) {
     }
 
     return 0;
-
 }
 
 
@@ -296,7 +282,6 @@ int do_cd(char **arguments) {
     }
 
     return 0;
-
 }
 
 
@@ -323,17 +308,15 @@ char **create_pipe(char **arguments, int *fd) {
 
             // Create pipe
             if (pipe(fd) < 0) {
-                error(EXIT_FAILURE, errno, "Cannot create pipe");
+                perror("Cannot create pipe");
+                exit(EXIT_FAILURE);
             }
 
             break;
-
         }
-
     }
 
     return sink_arguments;
-
 }
 
 
@@ -345,7 +328,7 @@ int main(int argc, char **argv) {
     char **arguments;
     char **sink_arguments = NULL;
 
-    while ((input = read_prompt()) != NULL) {
+    while ((input = read_prompt())) {
 
         num_arguments = num_tokens(input, COMMAND_SEPARATOR);
 
@@ -357,7 +340,8 @@ int main(int argc, char **argv) {
         arguments = (char **) malloc(sizeof(char *) * (num_arguments + 1));
 
         if (arguments == NULL) {
-            error(EXIT_FAILURE, errno, "Unable to allocate necessary memory");
+            perror("Unable to allocate necessary memory");
+            exit(EXIT_FAILURE);
         }
 
         get_tokens(input, COMMAND_SEPARATOR, arguments, num_arguments);
@@ -385,15 +369,11 @@ int main(int argc, char **argv) {
             wait((void *) NULL);
 
         } else {
-
             execute_command(arguments, fd, NO_PIPE);
-
         }
 
         wait((void *) NULL);
-
         free(input);
-
     }
 
     exit(EXIT_SUCCESS);
