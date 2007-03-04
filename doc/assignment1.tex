@@ -5,11 +5,13 @@
 \title{Unix Processing Assignment}
 \author{%
         \mbox{}\\
-	Thomas Veerman and Martijn Vermaat\\
-	Department of Mathematics and Computer Science\\
-	Vrije Universiteit, Amsterdam, The Netherlands
-        \mbox{}\\ 
-        \texttt{\{tveerman,mvermaat\}@cs.vu.nl}
+	Thomas Veerman\\
+	\texttt{tveerman@cs.vu.nl}\\
+	1329545\\
+	\mbox{}\\
+	Martijn Vermaat\\
+	\texttt{mvermaat@cs.vu.nl}\\
+	1362917
 }
 
 
@@ -53,5 +55,81 @@ We could also have used semaphores in the pthread version, just like we did in t
 
 \section{Java threads}
 \paragraph{Question 7}
-Yes. With semaphores one can do mutual exclusion, but also wait for events. In the Java version of the programs we could have simulated syn2.c by using two Semaphore objects, initialized to zero permits, and use \emph{aquire()} and \emph{release()} as DOWN() and UP() respectively. Both threads should be given a reference to these objects so that they both have access to them.
+Yes. With semaphores one can do mutual exclusion, but also wait for events. In the Java version of the programs we could have simulated syn2.c by using two Semaphore objects, initialized to zero permits, and use \emph{acquire()} and \emph{release()} as DOWN() and UP() respectively. Both threads should be given a reference to these objects so that they both have access to them.
+
+\section{Program documentation}
+For the assignments we have written a total of 10 programs:
+\begin{center}
+% use packages: array
+\begin{tabular}{ l | p{9cm} }
+mysh1.c & micro-shell that can execute a command (program) \\ \hline
+mysh2.c & extension of mysh1.c where a program can have additional parameters \\ \hline
+mysh3.c & extension of mysh2.c such that it accepts two piped commands \\ \hline
+mysh4.c & extension of mysh3.c that supports the \emph{cd} command \\ \hline
+syn1.c & program that uses two processes with synchronization to print \emph{bonjour monde} and \emph{hello world} \\ \hline
+syn2.c & program that uses two processes with synchronization to print \emph{abcd} \\ \hline
+syn1.java & same as syn1.c, but implemented in Java \\ \hline
+syn2.java & same as syn2.c. but implemented in Java \\ \hline
+synthread1.c & same as syn1.c, but uses threads instead of processes \\ \hline
+synthread2.c & same as syn2.c, but uses threads instead of processes
+\end{tabular}
+\end{center}
+\paragraph{mysh1.c} The program starts by typing ./mysh1 if you are in the same directory as the binary program. A micro-shell will start that will run a program by typing the name of the program (or path to the program) and pressing $<$enter$>$. The shell does not support parameters, because it will treat the complete string as if it is the program name. For example, when typing \emph{ls -la}$<$enter$>$, \emph{ls -la} will be used as program name, which probably does not exist.
+
+The program is designed as follows. The program continuously reads the input the user types in a while loop. When the user has pressed the enter key, the input is stored in an expanding buffer (so that it will always fit). Subsequently an array is built which will ultimately be passed to \emph{execvp}. The array consists of two data elements:
+\begin{tabbing}
+\hspace{20pt}\=\kill
+ \> [0] pointer to char array holding the program name\\ 
+ \> [1] 0 - marking the end of the array
+\end{tabbing}
+The array is checked if the user entered \emph{exit}, which will cause the program to break out of the while loop and terminate (the same happens if the user sent EOF by pressing $<$Ctrl$>$ + $<$D$>$), because \emph{exit} is not a program, but an internal shell command. Finally, the array is passed to a routine \emph{execute\_command} which extracts the program name out of the array, forks off a child process, and calls \emph{execvp} with as parameters the program name and array. Subsequently the parent process returns and does \emph{wait} for the child to exit, and enters a new iteration of the while loop.
+
+We could have designed mysh1.c without an expanding buffer by making a buffer of 100 bytes, which will probably be enough to hold the input. However, this will easily lead to buffer overflows. An alternative is the use of \emph{getline}, a routine part of the GNU extensions. As an alternative to \emph{execvp} we could have used \emph{execlp} because the array seems a bit over the top considering there is no support for parameters. However, in order to make it easy to extend the program as needed in the next couple of assignments, we used \emph{execvp}. Also, we wanted support for the \$PATH variable. For example, typing \emph{ls} will effectively execute \emph{/bin/ls}, even though the user did not enter the /bin/ part.
+
+\paragraph{mysh2.c} The program starts by typing ./mysh2 if you are in the same directory as the binary program. A micro-shell will start that will run a program by typing the name of the program (or path to the program), a few optional parameters for the program, and pressing $<$enter$>$.
+
+The program is designed as follows. In essence it is the same as mysh1.c, but with a few additions. The while loop initially counts how many program parameters are entered, i.e. counting the number of space delimited tokens (multiple consecutive spaces are treated as one). Then instead of building a two data elements array, it takes the number of tokens into account. The array will look like this when the user entered \emph{ls -l -a}:
+\begin{tabbing}
+\hspace{20pt}\=\kill
+ \> [0] pointer to char array holding \emph{ls}\\ 
+ \> [1] pointer to char array holding \emph{-l}\\
+ \> [2] pointer to char array holding \emph{-a}\\
+ \> [3] 0 - marking the end of the array
+\end{tabbing}
+Then the parameters are copied to the array, and \emph{execute\_command} is called.
+A nice feature of our design is that we only needed to extend a few parts of mysh1.c in order to support parameters.
+
+\paragraph{mysh3.c} The program starts by typing ./mysh3 if you are in the same directory as the binary program. A micro-shell will start that will run a program by typing the name of the program (or path to the program), a few optional parameters for the program, and pressing $<$enter$>$. Alternatively, a program can be run by typing the program name with a few optional parameters, a pipe sign $\mid$ , and again a program name with a few optional parameters. For example, it is possible to type a command like \emph{ls -la $\mid$ grep .c}.
+
+The program is designed as follows. It is the same as mysh2.c, but we modified the \emph{execute\_command} routine to accept a couple of parameters describing pipes (i.e. a pipe file descriptor and the usage of the pipe - read or write to it). When the while loop has finished counting tokens and creating and filling the array that is to be passed to \emph{execvp}, a routine is called that checks the array if it contains the pipe sign. If that is the case, it overwrites the pipe sign with \emph{null} -delimiting the array-, creates a (globally accesible) pipe, and returns a pointer to the first data element of the array that belongs to the second program. For example, if the user entered \emph{ls -la $\mid$ grep .c}, a pointer to the data element holding \emph{grep} will be returned. Before checking for pipe signs:
+\begin{tabbing}
+\hspace{20pt}\=\kill
+ \> [0] pointer to char array holding \emph{ls}\\ 
+ \> [1] pointer to char array holding \emph{-l}\\
+ \> [2] pointer to char array holding \emph{-a}\\
+ \> [3] pointer to char array holding \emph{$\mid$}\\ 
+ \> [4] pointer to char array holding \emph{grep}\\
+ \> [5] pointer to char array holding \emph{.c}\\
+ \> [6] 0 - marking the end of the array
+\end{tabbing}
+After checking for pipe signs:
+\begin{tabbing}
+\hspace{20pt}\=\kill
+ \> [0] pointer to char array holding \emph{ls}\\ 
+ \> [1] pointer to char array holding \emph{-l}\\
+ \> [2] pointer to char array holding \emph{-a}\\
+ \> [3] 0 - marking the end of the array\\ 
+ \> [4] pointer to char array holding \emph{grep}\\
+ \> [5] pointer to char array holding \emph{.c}\\
+ \> [6] 0 - marking the end of the array
+\end{tabbing}
+If there indeed is a pipe, two calls to \emph{execute\_command} are made. One call holding a pointer to the first program and as pipe action \emph{write to pipe}, and a second call holding a pointer to the second program and as pipe action \emph{read from pipe}. When there is no pipe, the pipe action is \emph{no pipe}, indicating to \emph{execute\_command} that it does not have to do any pipe administration. Otherwise \emph{execute\_command} closes in the case of \emph{write to pipe} after the fork file descriptor 0 of the pipe and \emph{standard out}, and ties \emph{standard out} to file descriptor 1 of the pipe, such that writes to \emph{standard out} are in fact written to the pipe. In the case of \emph{read from pipe}, \emph{execute\_command} closes after the fork file descriptor 1 of the pipe and \emph{standard in}, and ties \emph{standard in} to file descriptor 0 of the pipe, such that reads from \emph{standard in} are in fact read from the pipe. The parent of both child processes closes both pipe file descriptors, because it does not need them (and therefore should be closed!). When all pipe administration is done, a call to \emph{execvp} is made.
+
+It is important to note that the parent has to fork both children, i.e. it does not work if the parent forks a child, and the child forks the next child, because the first child has to do a \emph{wait} on the second child, but the second child is waiting for the first child to execute the command.
+
+\paragraph{mysh4.c} The program starts by typing ./mysh4 if you are in the same directory as the binary program. A micro-shell will start that will run a program by typing the name of the program (or path to the program), a few optional parameters for the program, and pressing $<$enter$>$. Alternatively, a program can be run by typing the program name with a few optional parameters, a pipe sign $\mid$ , and again a program name with a few optional parameters. For example, it is possible to type a command like \emph{ls -la $\mid$ grep .c}. Additionally, the current working directory can be changed by using the \emph{cd} command. Just typing \emph{cd} will change to the home directory of the current user, otherwise an attempt is made to change to the indicated directory (which can fail due filesystem limitations or non-existing directories).
+
+The program is designed as follows. It is the same as mysh3.c with a slight modification to the main while loop. After the loop checks if the user entered \emph{exit} a check is done if the user entered \emph{cd}. If that is true, it tries to perform the command, and continue to the next iteration of the while loop. The command fails if the filesystem does not permit to change to a particular directory (due to rights restrictions or non-existent directories) or if it fails to change to the user's home directory (by typing only \emph{cd}, omiting any parameters) because the \$ENVIRONMENT\_HOMEDIR variable could not be found.
+
+
 \end{document}
