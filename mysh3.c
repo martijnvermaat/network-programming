@@ -33,7 +33,7 @@ void counting_free(void *mem) {
 #define free counting_free
 
 
-#define READ_BUFFER_SIZE 4
+#define READ_BUFFER_SIZE 20
 #define DIRECTORY_SEPARATOR '/'
 #define COMMAND_SEPARATOR ' '
 #define COMMAND_EXIT "exit"
@@ -137,18 +137,6 @@ void execute_command (char **arguments, int *fd, int pipe_action) {
     pid_t pid;
     char *command;
 
-    if (arguments[0] == NULL) {
-        return;
-    }
-
-    // Store executable command
-    command = arguments[0];
-
-    // Skip preceding path for executable name
-    if(strrchr(arguments[0], DIRECTORY_SEPARATOR) != NULL) {
-        arguments[0] = strrchr(arguments[0], DIRECTORY_SEPARATOR) + 1;
-    }
-
     pid = fork();
 
     if (pid < 0) {
@@ -157,6 +145,18 @@ void execute_command (char **arguments, int *fd, int pipe_action) {
     }
 
     if (pid == 0) { // child process
+
+        if (arguments[0] == NULL || strlen(arguments[0]) == 0) {
+            exit(EXIT_FAILURE);
+        }
+
+        // Store executable command
+        command = arguments[0];
+
+        // Skip preceding path for executable name
+        if(strrchr(arguments[0], DIRECTORY_SEPARATOR) != NULL) {
+            arguments[0] = strrchr(arguments[0], DIRECTORY_SEPARATOR) + 1;
+        }
 
         if (pipe_action == WRITE_TO_PIPE) {
             close(fd[0]);
@@ -174,6 +174,7 @@ void execute_command (char **arguments, int *fd, int pipe_action) {
         perror(command);
         exit(EXIT_FAILURE);
     }
+
 }
 
 
@@ -183,7 +184,7 @@ void execute_command (char **arguments, int *fd, int pipe_action) {
 */
 char *read_prompt() {
 
-    char *buffer; //[READ_BUFFER_SIZE];
+    char *buffer;
     int buffer_size;
     char *p; // pointer to current character in buffer
 
@@ -191,6 +192,12 @@ char *read_prompt() {
     int length = 0;
 
     buffer = malloc(READ_BUFFER_SIZE);
+
+    if (buffer == NULL) {
+        perror("Unable to allocate necessary memory");
+        exit(EXIT_FAILURE);
+    }
+
     buffer_size = READ_BUFFER_SIZE;
     p = buffer;
 
@@ -209,6 +216,10 @@ char *read_prompt() {
             *p = '\0';
             break;
         }
+        /*
+          If character == '\0' we read more than we process, but that's not
+          too bad I guess.
+        */
 
         *p = character; // put character in buffer
         p++;
@@ -218,6 +229,15 @@ char *read_prompt() {
         if (length >= buffer_size) {
             buffer_size += READ_BUFFER_SIZE;
             buffer = realloc(buffer, buffer_size);
+            if (buffer == NULL) {
+                /*
+                  Without the exit() we should do a free() on the original
+                  buffer (this would require some more lines though, because
+                  we just lost the pointer to it...)
+                */
+                perror("Unable to allocate necessary memory");
+                exit(EXIT_FAILURE);
+            }
             p = buffer + length;
         }
     }
