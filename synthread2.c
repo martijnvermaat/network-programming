@@ -29,7 +29,9 @@ void *cd(void *param) {
         pthread_mutex_unlock(&mutex_ab);
 
         pthread_mutex_lock(&mutex_cd);
-        while (predicate_cd == 0) pthread_cond_wait(&var_cd, &mutex_cd);
+        while (predicate_cd == 0) {
+            pthread_cond_wait(&var_cd, &mutex_cd);
+        }
         predicate_cd = 0;
         pthread_mutex_unlock(&mutex_cd);
 
@@ -56,7 +58,9 @@ int main() {
     for (i=0;i<10;i++) {
 
         pthread_mutex_lock(&mutex_ab);
-        while (predicate_ab == 0) pthread_cond_wait(&var_ab, &mutex_ab);
+        while (predicate_ab == 0) {
+            pthread_cond_wait(&var_ab, &mutex_ab);
+        }
         predicate_ab = 0;
         pthread_mutex_unlock(&mutex_ab);
 
