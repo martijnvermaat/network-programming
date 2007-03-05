@@ -1,4 +1,4 @@
-CFLAGS  = -g -Wall -O3
+CFLAGS = -g -Wall -O3
 LDFLAGS =
 LDSYNTHREAD = -lpthread
 JAVAC = /usr/bin/javac
