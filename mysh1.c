@@ -46,18 +46,6 @@ void execute_command (char **arguments) {
     pid_t pid;
     char *command;
 
-    if (arguments[0] == NULL) {
-        return;
-    }
-
-    // Store executable command
-    command = arguments[0];
-
-    // Skip preceding path for executable name
-    if(strrchr(arguments[0], DIRECTORY_SEPARATOR) != NULL) {
-        arguments[0] = strrchr(arguments[0], DIRECTORY_SEPARATOR) + 1;
-    }
-
     pid = fork();
 
     if (pid < 0) {
@@ -66,10 +54,25 @@ void execute_command (char **arguments) {
     }
 
     if (pid == 0) { // child process
+
+        if (arguments[0] == NULL || strlen(arguments[0]) == 0) {
+            exit(EXIT_FAILURE);
+        }
+
+        // Store executable command
+        command = arguments[0];
+
+        // Skip preceding path for executable name
+        if(strrchr(arguments[0], DIRECTORY_SEPARATOR) != NULL) {
+            arguments[0] = strrchr(arguments[0], DIRECTORY_SEPARATOR) + 1;
+        }
+
         execvp(command, arguments);
         perror(command);
         exit(EXIT_FAILURE);
+
     }
+
 }
 
 
@@ -79,7 +82,7 @@ void execute_command (char **arguments) {
 */
 char *read_prompt() {
 
-    char *buffer; //[READ_BUFFER_SIZE];
+    char *buffer;
     int buffer_size;
     char *p; // pointer to current character in buffer
 
@@ -126,8 +129,9 @@ char *read_prompt() {
             buffer = realloc(buffer, buffer_size);
             if (buffer == NULL) {
                 /*
-                  TODO: free() original buffer, but we just lost the pointer.
-                  We can solve this by p=realloc() etcetera...
+                  Without the exit() we should do a free() on the original
+                  buffer (this would require some more lines though, because
+                  we just lost the pointer to it...)
                 */
                 perror("Unable to allocate necessary memory");
                 exit(EXIT_FAILURE);
