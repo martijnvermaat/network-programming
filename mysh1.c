@@ -33,7 +33,7 @@ void counting_free(void *mem) {
 #define free counting_free
 
 
-#define READ_BUFFER_SIZE 4
+#define READ_BUFFER_SIZE 20
 #define DIRECTORY_SEPARATOR '/'
 #define COMMAND_EXIT "exit"
 
@@ -87,6 +87,12 @@ char *read_prompt() {
     int length = 0;
 
     buffer = malloc(READ_BUFFER_SIZE);
+
+    if (buffer == NULL) {
+        perror("Unable to allocate necessary memory");
+        exit(EXIT_FAILURE);
+    }
+
     buffer_size = READ_BUFFER_SIZE;
     p = buffer;
 
@@ -105,6 +111,10 @@ char *read_prompt() {
             *p = '\0';
             break;
         }
+        /*
+          If character == '\0' we read more than we process, but that's not
+          too bad I guess.
+        */
 
         *p = character; // put character in buffer
         p++;
@@ -114,6 +124,14 @@ char *read_prompt() {
         if (length >= buffer_size) {
             buffer_size += READ_BUFFER_SIZE;
             buffer = realloc(buffer, buffer_size);
+            if (buffer == NULL) {
+                /*
+                  TODO: free() original buffer, but we just lost the pointer.
+                  We can solve this by p=realloc() etcetera...
+                */
+                perror("Unable to allocate necessary memory");
+                exit(EXIT_FAILURE);
+            }
             p = buffer + length;
         }
     }
