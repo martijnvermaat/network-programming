@@ -162,15 +162,33 @@ void execute_command (char **arguments, int *fd, int pipe_action) {
         }
 
         if (pipe_action == WRITE_TO_PIPE) {
-            close(fd[0]);
-            close(STDOUT_FILENO);
-            dup2(fd[1], STDOUT_FILENO);
+            if (close(fd[0]) == -1) {
+                perror(NULL);
+                exit(EXIT_FAILURE);
+            }
+            if (close(STDOUT_FILENO) == -1) {
+                perror(NULL);
+                exit(EXIT_FAILURE);
+            }
+            if (dup2(fd[1], STDOUT_FILENO) == -1) {
+                perror(NULL);
+                exit(EXIT_FAILURE);
+            }
         }
 
         if (pipe_action == READ_FROM_PIPE) {
-            close(fd[1]);
-            close(STDIN_FILENO);
-            dup2(fd[0], STDIN_FILENO);
+            if (close(fd[1]) == -1) {
+                perror(NULL);
+                exit(EXIT_FAILURE);
+            }
+            if (close(STDIN_FILENO) == -1) {
+                perror(NULL);
+                exit(EXIT_FAILURE);
+            }
+            if (dup2(fd[0], STDIN_FILENO) == -1) {
+                perror(NULL);
+                exit(EXIT_FAILURE);
+            }
         }
 
         execvp(command, arguments);
