@@ -17,7 +17,7 @@
 #endif
 
 
-#define SERVER_PORT 80
+#define SERVER_PORT 2342
 
 
 int _malloc_counter = 0;
@@ -42,7 +42,7 @@ int main(int argc, char **argv) {
     struct in_addr *server_address;
     struct sockaddr_in server;
     size_t address_length;
-    int server_socket;
+    int server_socket, readbytes = 0, connection_counter = 0;
 
     if (argc < 2) {
         printf("Usage: %s hostname\n", argv[0]);
@@ -81,7 +81,16 @@ int main(int argc, char **argv) {
     }
 
     // TODO: some code to get an int
-
+    while(!readbytes) {
+        readbytes = read(server_socket, (void *) &connection_counter, sizeof(int));
+        if(readbytes < 0) {
+            perror("Read from connection error");
+            exit(EXIT_FAILURE);
+        }
+    }
+    
+    printf("I recieved: %d\n", connection_counter);
+    
     if (close(server_socket) == -1) {
         perror("Error closing connection");
         exit(EXIT_FAILURE);
