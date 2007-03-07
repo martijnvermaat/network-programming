@@ -1,5 +1,4 @@
-#define DEBUG 1
-
+#include "assignment2.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -8,17 +7,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-
-
-#ifdef DEBUG
-#define dprint printf
-#else
-#define dprint (void)
-#endif
-
-
-#define SERVER_PORT 2342
-
 
 int _malloc_counter = 0;
 
@@ -89,7 +77,7 @@ int main(int argc, char **argv) {
         }
     }
     
-    printf("I recieved: %d\n", connection_counter);
+    printf("I received: %d\n", connection_counter);
     
     if (close(server_socket) == -1) {
         perror("Error closing connection");

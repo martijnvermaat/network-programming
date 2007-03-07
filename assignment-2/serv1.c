@@ -1,5 +1,4 @@
-#define DEBUG 1
-
+#include "assignment2.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
@@ -8,31 +7,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <netdb.h>
-
-
-#ifdef DEBUG
-#define dprint printf
-#else
-#define dprint (void)
-#endif
-
-
-#define SERVER_PORT 2342
-
-int _malloc_counter = 0;
-
-void *counting_malloc(size_t siz) {
-    _malloc_counter++;
-    return malloc(siz);
-}
-
-void counting_free(void *mem) {
-    _malloc_counter--;
-    free(mem);
-}
-
-#define malloc counting_malloc
-#define free counting_free
 
 int connection_counter = 0;
 
