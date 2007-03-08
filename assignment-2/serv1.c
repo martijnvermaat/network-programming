@@ -11,10 +11,11 @@
 int connection_counter = 0;
 
 void treat_request(int socket) {
-    int written = 0;
+    int written = 0, current = 0;
     connection_counter++;
-    while(!written) {
-        written = write(socket, (const void *)&connection_counter, sizeof(int));
+    current = htonl(connection_counter);
+    while(written != sizeof(int)) {
+        written = write(socket, (const void *) &current, sizeof(int));
         if(written == -1) {
             perror("Connection error");
             break;
@@ -23,11 +24,9 @@ void treat_request(int socket) {
 }
 
 int main(int argc, char **argv) {
-
-    int cl_socket, newsock;
+    int cl_socket, newsock, option;
     struct sockaddr_in server_addr, client_addr;
     socklen_t addrlen;
-    //struct in_addr inp;
 
     addrlen = sizeof(struct sockaddr_in);
     cl_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -36,14 +35,19 @@ int main(int argc, char **argv) {
         perror("Error creating socket");
         exit(EXIT_FAILURE);
     }
-    //inet_aton("127.0.0.1", &inp);
+
+    // When one tries to invoke the server multiple times after eachother within
+    // a small amount of time, one will find that the socket is still in the
+    // TIME_WAIT state, in order to catch delayed packets and not to confuse
+    // the next user of the socket. Set socket to REUSEADDR to be able to start
+    // the server again.
+    option = 1;
+    setsockopt(cl_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
+
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(SERVER_PORT);
-    //server_addr.sin_addr = inp;
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
-    
-    
-    
+
     if(bind(cl_socket, (struct sockaddr *) &server_addr, addrlen) < 0) {                
         perror("Error binding to socket");
         exit(EXIT_FAILURE);
@@ -55,17 +59,13 @@ int main(int argc, char **argv) {
     }
     
     while(1) {
-        dprint("Accepting incoming connections\n");
         newsock = accept(cl_socket,(struct sockaddr *) &client_addr, &addrlen);
-        dprint("Accepted connection\n");
         if(newsock < 0) {
             perror("Connection error");
-            exit(EXIT_FAILURE);
+            continue;
         }           
         treat_request(newsock);
-        dprint("Sent reply: %d\n", connection_counter);
-        close(newsock);     
-        dprint("Closed connection\n");
+        close(newsock);
     }
 
     exit(EXIT_SUCCESS);

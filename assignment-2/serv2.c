@@ -13,7 +13,7 @@
 #include <netdb.h>
 
 int *connection_counter;
-int shm_id, mutex;
+int shm_id, mutex, cl_socket;
 struct sembuf up = {0, 1, 0};
 struct sembuf down = {0, -1, 0};
 
@@ -26,10 +26,10 @@ void sig_chld(int sig) {
 
 void sig_int(int sig) {
     // on termination, clean up shared memory
-    dprint("Terminating\n");
     shmdt((void *) connection_counter); // detach from shared memory
     shmctl(shm_id, IPC_RMID, 0); // remove shared memory
     semctl(mutex, 0, IPC_RMID); // remove semaphore
+    close(cl_socket);
     exit(EXIT_SUCCESS);
 }
 
@@ -40,17 +40,14 @@ void setup_shm(void) {
 }
 
 void treat_request(int socket) {
-    int written = 0;
-    int current = 0;
+    int written = 0, current = 0;
    
     semop(mutex, &down, 1); // mutual exclusion
-        dprint("counter: %d - current: %d\n", *connection_counter, current);
         *connection_counter += 1;
-        current = *connection_counter;
-        dprint("counter: %d - current: %d\n", *connection_counter, current);
+        current = htonl(*connection_counter);
     semop(mutex, &up, 1); // release mutex
     
-    while(!written) {
+    while(written != sizeof(int)) { // make sure we write an int
         written = write(socket, (const void *) &current, sizeof(int));
         if(written == -1) {
             perror("Connection error");
@@ -63,7 +60,7 @@ void treat_request(int socket) {
 }
 
 int main(int argc, char **argv) {
-    int cl_socket, newsock;
+    int newsock, option;
     struct sockaddr_in server_addr, client_addr;
     socklen_t addrlen;
 
@@ -77,6 +74,14 @@ int main(int argc, char **argv) {
         perror("Error creating socket");
         exit(EXIT_FAILURE);
     }
+    
+    // When one tries to invoke the server multiple times after eachother within
+    // a small amount of time, one will find that the socket is still in the
+    // TIME_WAIT state, in order to catch delayed packets and not to confuse
+    // the next user of the socket. Set socket to REUSEADDR to be able to start
+    // the server again.
+    option = 1;
+    setsockopt(cl_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
     
     server_addr.sin_family = AF_INET;
     server_addr.sin_port = htons(SERVER_PORT);
@@ -97,24 +102,19 @@ int main(int argc, char **argv) {
     setup_shm();
     
     while(1) {
-        dprint("Accepting incoming connections\n");
         newsock = accept(cl_socket,(struct sockaddr *) &client_addr, &addrlen);
-        dprint("Accepted connection\n");
         if(newsock < 0) {
             perror("Connection error");
-            continue; //exit(EXIT_FAILURE);
+            continue;
         }
 
         if (fork() == 0) { // child
-            dprint("Forked off child to treat request\n");
             treat_request(newsock);
-            dprint("Finished request\n");
-            exit(0);
+            close(newsock);
+            exit(EXIT_SUCCESS);
         } else { // parent
             close(newsock); // no need for duplicate sockets
         }
     }
-
     exit(EXIT_SUCCESS);
-
 }

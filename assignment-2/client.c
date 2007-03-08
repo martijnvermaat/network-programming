@@ -48,7 +48,6 @@ int main(int argc, char **argv) {
     }
 
     server_address = (struct in_addr*) server_resolve->h_addr_list[0];
-    dprint("The IP address of %s is %s\n", argv[1], inet_ntoa(*server_address));
 
     server.sin_family = AF_INET;
     server.sin_port = htons(SERVER_PORT);
@@ -68,7 +67,6 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    // TODO: some code to get an int
     while(!readbytes) {
         readbytes = read(server_socket, (void *) &connection_counter, sizeof(int));
         if(readbytes < 0) {
@@ -77,7 +75,7 @@ int main(int argc, char **argv) {
         }
     }
     
-    printf("I received: %d\n", connection_counter);
+    printf("I received: %d\n", ntohl(connection_counter));
     
     if (close(server_socket) == -1) {
         perror("Error closing connection");
