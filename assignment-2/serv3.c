@@ -44,19 +44,13 @@ void setup_shm(void) {
 
 void treat_request(int socket) {
     int written = 0, current = 0;
-    dprint("Setup for mutex: %d\n", semctl(mutex, 0, GETVAL));
     connection_counter = (int *) shmat(shm_id, 0, 0);
     semop(mutex, &down, 1); // mutual exclusion
-        dprint("Mutex aquired: %d\n", semctl(mutex, 0, GETVAL));
         *connection_counter += 1;
-        dprint("Oh oh?\n");
         current = htonl(*connection_counter);
-    dprint("Release for mutex\n");
     if(semop(mutex, &up, 1) < 0) { // release mutex
         perror("sem release error");
     }
-    dprint("Released mutex: %d\n", semctl(mutex, 0, GETVAL));
-    dprint("Writing to socket\n");
     while(written != sizeof(int)) { // make sure we write an int
         written = write(socket, (const void *) &current, sizeof(int));
         if(written == -1) {
@@ -65,7 +59,6 @@ void treat_request(int socket) {
         }
     }
     
-    dprint("Detach from shared mem\n");
     // detach from shared memory
     shmdt((void *) connection_counter);
 }
@@ -74,15 +67,12 @@ void recv_requests(int socket) {
     int newsock;
     
     while(1) {
-        dprint("Accepting connection\n");
         newsock = accept(socket,(struct sockaddr *) &client_addr, &addrlen);
         if(newsock < 0) {
             perror("Connection error");
             continue;
         }
-        dprint("Treating request\n");
         treat_request(newsock);
-        dprint("Closing socket\n");
         close(newsock);
     }
 }
@@ -124,15 +114,16 @@ int main(int argc, char **argv) {
     }
     
     signal(SIGCHLD, sig_chld); // handle waits for children
-    signal(SIGINT, sig_int); // clean up shared memory on termination
     setup_shm();
 
     for (process_counter = 0; process_counter < NB_PROC; process_counter++) {
         if(fork() == 0 ) {
-            dprint("Forked child\n");
             recv_requests(cl_socket);
         }
     }
+    // clean up shared memory on termination, installed after fork in order to
+    // be called only by the parent process
+    signal(SIGINT, sig_int);
     
     while(1) { pause(); }
 

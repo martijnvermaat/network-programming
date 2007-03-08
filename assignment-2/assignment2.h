@@ -10,6 +10,6 @@
 
 
 #define SERVER_PORT 2342
-#define NB_PROC 1
+#define NB_PROC 5
 
 #endif
