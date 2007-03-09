@@ -12,6 +12,7 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+
 int *connection_counter;
 int shm_id, mutex, cl_socket;
 struct sembuf up = {0, 1, 0};
@@ -19,8 +20,9 @@ struct sembuf down = {0, -1, 0};
 struct sockaddr_in server_addr, client_addr;
 socklen_t addrlen;
 
+
 void sig_chld(int sig) {
-    while(waitpid(0, NULL, WNOHANG) > 0) {
+    while (waitpid(0, NULL, WNOHANG) > 0) {
         ;
     }
     signal(SIGCHLD,sig_chld);
@@ -44,12 +46,12 @@ void setup_shm(void) {
 
 void treat_request(int socket) {
     int written = 0, current = 0;
-    connection_counter = (int *) shmat(shm_id, 0, 0);
+    connection_counter = (int *) shmat(shm_id, 0, 0);  // TODO: move to recv_requests outside while(1)?
     semop(mutex, &down, 1); // mutual exclusion
         *connection_counter += 1;
         current = htonl(*connection_counter);
     if(semop(mutex, &up, 1) < 0) { // release mutex
-        perror("sem release error");
+        perror("sem release error");  // TODO: should we check for semop errors? never did it in ass1...
     }
     while(written != sizeof(int)) { // make sure we write an int
         written = write(socket, (const void *) &current, sizeof(int));
@@ -119,12 +121,15 @@ int main(int argc, char **argv) {
     for (process_counter = 0; process_counter < NB_PROC; process_counter++) {
         if(fork() == 0 ) {
             recv_requests(cl_socket);
+            // TODO: exit to be sure
         }
+        // TODO: fork error
     }
     // clean up shared memory on termination, installed after fork in order to
     // be called only by the parent process
+    // TODO: NO, signals are not copied to the child after a fork!
     signal(SIGINT, sig_int);
-    
+
     while(1) { pause(); }
 
     exit(EXIT_SUCCESS);

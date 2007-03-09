@@ -84,7 +84,7 @@ int main (int argc, char **argv) {
 
         if (close(client_socket) == -1) {
             perror("Error closing connection");
-            exit(EXIT_FAILURE);
+            exit(EXIT_FAILURE); // of niet
         }
 
     }

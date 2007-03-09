@@ -36,7 +36,7 @@ void sig_int (int sig) {
     shmdt((void *) connection_counter); // detach from shared memory
     shmctl(shm_id, IPC_RMID, NULL); // remove shared memory
     semctl(mutex, 0, IPC_RMID); // remove semaphore
-    close(listen_socket);
+    close(listen_socket); // TODO: hmm, is this necessary? i think not
     exit(EXIT_SUCCESS);
 }
 
