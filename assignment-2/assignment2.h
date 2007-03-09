@@ -1,4 +1,6 @@
 #ifndef __ASSIGNMENT2_H
+#define __ASSIGNMENT2_H
+
 
 #define DEBUG 1
 
@@ -10,6 +12,8 @@
 
 
 #define SERVER_PORT 2342
+#define PENDING_CONNECTIONS_QUEUE 5
 #define NB_PROC 5
+
 
 #endif

@@ -8,30 +8,40 @@
 #include <arpa/inet.h>
 #include <netdb.h>
 
+
 int connection_counter = 0;
 
-void treat_request(int socket) {
+
+void treat_request (int socket) {
+
     int written = 0, current = 0;
+
     connection_counter++;
+
     current = htonl(connection_counter);
-    while(written != sizeof(int)) {
+
+    while (written != sizeof(int)) {
         written = write(socket, (const void *) &current, sizeof(int));
-        if(written == -1) {
+        if (written == -1) {
             perror("Connection error");
             break;
         }
     }
+
 }
 
-int main(int argc, char **argv) {
-    int cl_socket, newsock, option;
-    struct sockaddr_in server_addr, client_addr;
-    socklen_t addrlen;
 
-    addrlen = sizeof(struct sockaddr_in);
-    cl_socket = socket(AF_INET, SOCK_STREAM, 0);
+int main (int argc, char **argv) {
 
-    if (cl_socket == -1) {
+    int listen_socket, client_socket;
+    int option_value;
+    struct sockaddr_in server_address, client_address;
+    socklen_t address_length;
+
+    address_length = sizeof(struct sockaddr_in);
+    listen_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+    if (listen_socket == -1) {
         perror("Error creating socket");
         exit(EXIT_FAILURE);
     }
@@ -41,31 +51,47 @@ int main(int argc, char **argv) {
     // TIME_WAIT state, in order to catch delayed packets and not to confuse
     // the next user of the socket. Set socket to REUSEADDR to be able to start
     // the server again.
-    option = 1;
-    setsockopt(cl_socket, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option));
+    option_value = 1;
+    if (setsockopt(listen_socket, SOL_SOCKET, SO_REUSEADDR, &option_value, sizeof(option_value)) == -1) {
+        perror("Error setting socket option");
+        exit(EXIT_FAILURE);
+    }
 
-    server_addr.sin_family = AF_INET;
-    server_addr.sin_port = htons(SERVER_PORT);
-    server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
+    server_address.sin_family = AF_INET;
+    server_address.sin_port = htons(SERVER_PORT);
+    server_address.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    if(bind(cl_socket, (struct sockaddr *) &server_addr, addrlen) < 0) {                
+    if(bind(listen_socket, (struct sockaddr *) &server_address, address_length) == -1) {                
         perror("Error binding to socket");
         exit(EXIT_FAILURE);
     }
-    
-    if(listen(cl_socket,5) < 0) { // we use magic number 5
+
+    if(listen(listen_socket, PENDING_CONNECTIONS_QUEUE) == -1) {
         perror("Error setting connection to server mode");
         exit(EXIT_FAILURE);
     }
-    
+
     while(1) {
-        newsock = accept(cl_socket,(struct sockaddr *) &client_addr, &addrlen);
-        if(newsock < 0) {
+
+        client_socket = accept(listen_socket, (struct sockaddr *) &client_address, &address_length);
+
+        if (client_socket == -1) {
             perror("Connection error");
             continue;
-        }           
-        treat_request(newsock);
-        close(newsock);
+        }
+
+        treat_request(client_socket);
+
+        if (close(client_socket) == -1) {
+            perror("Error closing connection");
+            exit(EXIT_FAILURE);
+        }
+
+    }
+
+    if (close(listen_socket) == -1) {
+        perror("Error closing socket");
+        exit(EXIT_FAILURE);
     }
 
     exit(EXIT_SUCCESS);

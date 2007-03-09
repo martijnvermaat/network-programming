@@ -69,14 +69,14 @@ int main(int argc, char **argv) {
 
     while(!readbytes) {
         readbytes = read(server_socket, (void *) &connection_counter, sizeof(int));
-        if(readbytes < 0) {
+        if(readbytes == -1) {
             perror("Read from connection error");
             exit(EXIT_FAILURE);
         }
     }
-    
+
     printf("I received: %d\n", ntohl(connection_counter));
-    
+
     if (close(server_socket) == -1) {
         perror("Error closing connection");
         exit(EXIT_FAILURE);
