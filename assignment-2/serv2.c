@@ -13,12 +13,6 @@
 #include <netdb.h>
 
 
-int *connection_counter;
-int shm_id, mutex, listen_socket;
-struct sembuf up = {0, 1, 0};
-struct sembuf down = {0, -1, 0};
-
-
 void sig_chld (int sig) {
     while (waitpid(0, NULL, WNOHANG) > 0) {
         ;
@@ -27,34 +21,10 @@ void sig_chld (int sig) {
 }
 
 
-void sig_int (int sig) {
-    // on termination, clean up shared memory
-    /*
-      TODO: if my experiments are correct, sig_int is not called
-      when we do exit() ourselves...!
-    */
-    shmdt((void *) connection_counter); // detach from shared memory
-    shmctl(shm_id, IPC_RMID, NULL); // remove shared memory
-    semctl(mutex, 0, IPC_RMID); // remove semaphore
-    close(listen_socket); // TODO: hmm, is this necessary? i think not
-    exit(EXIT_SUCCESS);
-}
-
-
-void setup_shm (void) {
-    shm_id = shmget(IPC_PRIVATE, sizeof(int), 0600);
-    connection_counter = (int *) shmat(shm_id, 0, 0);
-    *connection_counter = 0;
-}
-
-
-void treat_request (int socket) {
+void treat_request (int socket, int connection_counter) {
     int written = 0, current = 0;
 
-    semop(mutex, &down, 1); // mutual exclusion
-    *connection_counter += 1;
-    current = htonl(*connection_counter);
-    semop(mutex, &up, 1); // release mutex
+    current = htonl(connection_counter);
 
     while (written != sizeof(int)) { // make sure we write an int
         written = write(socket, (const void *) &current, sizeof(int));
@@ -63,21 +33,14 @@ void treat_request (int socket) {
             break;
         }
     }
-
-    // detach from shared memory
-    // TODO: move to fork()==0 {} code?
-    shmdt((void *) connection_counter);
 }
 
 
 int main (int argc, char **argv) {
 
-    int client_socket, option_value;
+    int client_socket, listen_socket, option_value, connection_counter;
     struct sockaddr_in server_address, client_address;
     socklen_t address_length;
-
-    mutex = semget(IPC_PRIVATE, 1, 0600);
-    semop(mutex, &up, 1);  // Initialize for mutual exclusion
 
     address_length = sizeof(struct sockaddr_in);
     listen_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -113,8 +76,7 @@ int main (int argc, char **argv) {
     }
 
     signal(SIGCHLD, sig_chld); // handle waits for children
-    signal(SIGINT, sig_int); // clean up shared memory on termination
-    setup_shm();
+    connection_counter = 0;
 
     while (1) {
         client_socket = accept(listen_socket,(struct sockaddr *) &client_address, &address_length);
@@ -123,8 +85,10 @@ int main (int argc, char **argv) {
             continue;
         }
 
+        connection_counter += 1;
+
         if (fork() == 0) { // child
-            treat_request(client_socket);
+            treat_request(client_socket, connection_counter);
             close(client_socket);
             exit(EXIT_SUCCESS);
         } else { // parent

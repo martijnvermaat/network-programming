@@ -9,14 +9,9 @@
 #include <netdb.h>
 
 
-int connection_counter = 0;
-
-
-void treat_request (int socket) {
+void treat_request (int socket, int connection_counter) {
 
     int written = 0, current = 0;
-
-    connection_counter++;
 
     current = htonl(connection_counter);
 
@@ -34,7 +29,7 @@ void treat_request (int socket) {
 int main (int argc, char **argv) {
 
     int listen_socket, client_socket;
-    int option_value;
+    int option_value, connection_counter;
     struct sockaddr_in server_address, client_address;
     socklen_t address_length;
 
@@ -71,6 +66,8 @@ int main (int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
+    connection_counter = 0;
+
     while(1) {
 
         client_socket = accept(listen_socket, (struct sockaddr *) &client_address, &address_length);
@@ -80,11 +77,12 @@ int main (int argc, char **argv) {
             continue;
         }
 
-        treat_request(client_socket);
+        connection_counter += 1;
+
+        treat_request(client_socket, connection_counter);
 
         if (close(client_socket) == -1) {
             perror("Error closing connection");
-            exit(EXIT_FAILURE); // of niet
         }
 
     }

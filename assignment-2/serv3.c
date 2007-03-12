@@ -14,7 +14,7 @@
 
 
 int *connection_counter;
-int shm_id, mutex, cl_socket;
+int shm_id, mutex;
 struct sembuf up = {0, 1, 0};
 struct sembuf down = {0, -1, 0};
 struct sockaddr_in server_addr, client_addr;
@@ -34,7 +34,6 @@ void sig_int(int sig) {
     shmdt((void *) connection_counter); // detach from shared memory
     shmctl(shm_id, IPC_RMID, 0); // remove shared memory
     semctl(mutex, 0, IPC_RMID); // remove semaphore
-    close(cl_socket);
     exit(EXIT_SUCCESS);
 }
 
@@ -46,12 +45,15 @@ void setup_shm(void) {
 
 void treat_request(int socket) {
     int written = 0, current = 0;
-    connection_counter = (int *) shmat(shm_id, 0, 0);  // TODO: move to recv_requests outside while(1)?
-    semop(mutex, &down, 1); // mutual exclusion
-        *connection_counter += 1;
-        current = htonl(*connection_counter);
+    if (semop(mutex, &down, 1) == -1) {
+        perror("Semaphore error");
+        return;
+    }
+    *connection_counter += 1;
+    current = htonl(*connection_counter);
     if(semop(mutex, &up, 1) < 0) { // release mutex
-        perror("sem release error");  // TODO: should we check for semop errors? never did it in ass1...
+        perror("Semaphore error");
+        return;
     }
     while(written != sizeof(int)) { // make sure we write an int
         written = write(socket, (const void *) &current, sizeof(int));
@@ -60,27 +62,27 @@ void treat_request(int socket) {
             break;
         }
     }
-    
-    // detach from shared memory
-    shmdt((void *) connection_counter);
 }
 
 void recv_requests(int socket) {
     int newsock;
-    
+
     while(1) {
         newsock = accept(socket,(struct sockaddr *) &client_addr, &addrlen);
         if(newsock < 0) {
             perror("Connection error");
             continue;
         }
+        connection_counter = (int *) shmat(shm_id, 0, 0);
         treat_request(newsock);
+        shmdt((void *) connection_counter);    // detach from shared memory
         close(newsock);
     }
 }
 
 int main(int argc, char **argv) {
-    int option, process_counter;
+    int option, process_counter, cl_socket;
+    pid_t pid;
 
     mutex = semget(IPC_PRIVATE, 1, 0600);
     semop(mutex, &up, 1);  // Initialize for mutual exclusion
@@ -119,15 +121,18 @@ int main(int argc, char **argv) {
     setup_shm();
 
     for (process_counter = 0; process_counter < NB_PROC; process_counter++) {
-        if(fork() == 0 ) {
+        pid = fork();
+        if (pid == 0 ) {
             recv_requests(cl_socket);
-            // TODO: exit to be sure
+            exit(EXIT_SUCCESS);
+        } else if (pid == -1) {
+            perror("Fork error");
+            exit(EXIT_FAILURE);
         }
-        // TODO: fork error
     }
+
     // clean up shared memory on termination, installed after fork in order to
     // be called only by the parent process
-    // TODO: NO, signals are not copied to the child after a fork!
     signal(SIGINT, sig_int);
 
     while(1) { pause(); }

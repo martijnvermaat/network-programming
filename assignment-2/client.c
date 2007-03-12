@@ -67,12 +67,16 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    while(!readbytes) {
-        readbytes = read(server_socket, (void *) &connection_counter, sizeof(int));
-        if(readbytes == -1) {
-            perror("Read from connection error");
-            exit(EXIT_FAILURE);
-        }
+    /*
+      We assume sizeof(int) number of bytes always get transfered in one go.
+    */
+    readbytes = read(server_socket, (void *) &connection_counter, sizeof(int));
+    if (readbytes == -1) {
+        perror("Read from connection error");
+        exit(EXIT_FAILURE);
+    } else if (readbytes == 0) {
+        fprintf(stderr, "There was nothing to read\n");
+        exit(EXIT_FAILURE);
     }
 
     printf("I received: %d\n", ntohl(connection_counter));

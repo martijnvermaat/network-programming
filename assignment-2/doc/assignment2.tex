@@ -22,9 +22,22 @@
 
 \section{A Content-Full Server}
 \paragraph{Question 1}
+Issue 1: connection counter in shared memory? depends on what you mean by 'count' and
+what the connection consists of.
+Issue 2: writing to a socket (file descriptor) may write less bytes at a time than
+provided. (also for reading)
+
+Yes, concurrent requests will be processed correctly, but accepted iteratively one at a
+time. Processing of connections can be done concurrently.
 
 \paragraph{Question 2}
+Issue 1: connection counter must be in shared memory (alternative might be pipes).
+Issue 2: mutual exclusion for the connection counter.
+Issue 3: be carefull where and when to remove semaphores and shared memory. always try
+to clean up, but not too soon (e.g. within a child process).
 
+Yes, concurrent requests will be processed correctly, and accepted and processed
+concurrently.
 
 \section{A Talk Program}
 \paragraph{Question 3}
