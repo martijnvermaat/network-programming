@@ -41,11 +41,40 @@ concurrently.
 
 \section{A Talk Program}
 \paragraph{Question 3}
+Iterative, there is no need for something more complicated.
 
 \paragraph{Question 4}
+Server and client on the same machine is ok. The problem with >1 server instances on the
+same machine is that the first server will bind to the port (and subsequent instances
+get an address in use error). There are a number of different approaches to this problem,
+depending on the application.
+
+1) The server accepts a port number as argument and users just agree on a port number
+   (and have bad luck if another team took the same number).
+
+2) For all or most technical solutions you would need another way to differentiate
+   between the chat sessions than the port number. This can be registration system based
+   on user names, or identifiers for the chat sessions like chat room names.
+
+   a) Use a 'super server' of which address and port number are known to resolve
+      usernames or chatrooms to addresses and port numbers. Servers register themselves
+      to the super server so their address and port number is known (first they try to
+      bind() untill a working port is found). Clients query the super server to know the
+      address and port number of the server they need. (A bit like portmapper.)
+
+      A variant on this scheme would be to route all chat traffic through the super
+      server.
+
+   b) All servers are 'smart servers' which can act as a kind of 'super server'. On an
+      unsuccessful bind() to the default port, the server tries to bind to another port
+      and sends a message to the already running server at the default port just like it
+      would in scheme (a) to the super server. Now, clients initially try to connect to
+      the default port, but only one client should be accepted in the chat directly.
+      Subsequent client requests get a response containing the port number of the chat
+      instance they are looking for.
 
 \paragraph{Question 5}
-
+We are thinking about using pthreads.
 
 \section{Program documentation}
 
