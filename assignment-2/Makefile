@@ -3,7 +3,7 @@ LDFLAGS =
 
 all: client serv1 serv2 serv3 talk
 
-%: %.c
+%: %.c assignment2.h
 	$(CC) $(CFLAGS) -o $@ $<
 
 clean:

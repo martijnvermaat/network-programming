@@ -104,6 +104,7 @@ char *read_line(int fd) {
     char *buffer;
     int buffer_size;
     char *p; // pointer to current character in buffer
+    int written;
 
     int character;
     int length = 0;
@@ -119,12 +120,14 @@ char *read_line(int fd) {
     p = buffer;
 
     while (1) {
-        if (read(fd, &character, 1) == -1) {
+        written = read(fd, &character, 1);
+
+        if (written == -1) {
             perror("Read error");
             exit(EXIT_FAILURE);
         }
 
-        if (character == EOF) {
+        if (written == 0) {
             if (length > 0) { // we have a string to return
                 *p = '\0';
             } else { // no string, return null
@@ -132,7 +135,11 @@ char *read_line(int fd) {
                 buffer = NULL;
             }
             break;
-        } else if (character == '\n') {
+        }
+
+        if (character == '\n') {
+            *p = '\n';
+            p++;
             *p = '\0';
             break;
         }
@@ -146,7 +153,7 @@ char *read_line(int fd) {
         length++;
 
         // check if we need to resize the buffer
-        if (length >= buffer_size) {
+        if (length >= buffer_size - 1) {
             buffer_size += READ_BUFFER_SIZE;
             buffer = realloc(buffer, buffer_size);
             if (buffer == NULL) {
@@ -189,38 +196,33 @@ void write_line (int fd, char *line) {
         p = p + result;
     }
 
-    // TODO: keep \n in read_line()
-    write(fd, "\n", 1);
-
 }
 
 
 void read_from_network (int socket) {
 
-    pid_t pid;
     char *line;
 
-    pid = fork();
+    while (1) {
 
-    if (pid == -1) {
-        perror("Fork error");
-        exit(EXIT_FAILURE);
-    }
-
-    if (pid == 0) {
+        //dprint("- we gaan een line lezen (socket)\n");
 
         line = read_line(socket);
 
+        //dprint("- we hebben een line gelezen (socket)\n");
+
         if (line == NULL) {
-            exit(EXIT_SUCCESS);
+            dprint("- dit was EOF (socket)\n");
+            break;
         }
 
-        printf("Ontvangen: ");
+        //dprint("Ontvangen: ");
+        //fflush(stdout);
         write_line(STDOUT_FILENO, line);
 
         free(line);
 
-        exit(EXIT_SUCCESS);
+        dprint("- dit was het voor deze line (socket)\n");
 
     }
 
@@ -229,35 +231,26 @@ void read_from_network (int socket) {
 
 void read_from_keyboard (int socket) {
 
-    pid_t pid;
     char *line;
 
-    pid = fork();
+    while (1) {
 
-    if (pid == -1) {
-        perror("Fork error");
-        exit(EXIT_FAILURE);
-    }
-
-    if (pid == 0) {
-
-        printf("* we gaan een line lezen (stdin)\n");
+        dprint("* we gaan een line lezen (stdin)\n");
 
         line = read_line(STDIN_FILENO);
 
-        printf("* we hebben een line gelezen (stdin)\n");
+        dprint("* we hebben een line gelezen (stdin)\n");
 
         if (line == NULL) {
-            printf("* dit was EOF (stdin)\n");
-            exit(EXIT_SUCCESS);
+            dprint("* dit was EOF (stdin)\n");
+            break;
         }
 
         write_line(socket, line);
 
         free(line);
 
-        printf("* dit was het voor deze child (stdin)\n");
-        exit(EXIT_SUCCESS);
+        dprint("* dit was het voor deze line (stdin)\n");
 
     }
 
@@ -265,18 +258,22 @@ void read_from_keyboard (int socket) {
 
 
 void sig_chld (int sig) {
+    // TODO: if child stopped, we must stop
+    // TODO: if we stop, child must stop
     while (waitpid(0, NULL, WNOHANG) > 0) {
         ;
     }
     signal(SIGCHLD, sig_chld);
+    fflush(stdout);
+    printf("We have quit\n");
+    exit(EXIT_SUCCESS);
 }
 
 
 int main (int argc, char **argv) {
 
     int socket;
-    int nb;
-    fd_set read_set;
+    pid_t pid;
 
     if (argc < 2) {
         dprint("We are the server!\n");
@@ -296,37 +293,23 @@ int main (int argc, char **argv) {
 
     signal(SIGCHLD, sig_chld);
 
-    while (1) {
+    pid = fork();
 
-        FD_ZERO(&read_set);
-        FD_SET(STDIN_FILENO, &read_set);
-        FD_SET(socket, &read_set);
-
-        printf("voor select\n");
-
-        // TODO highest fd is socket (?)
-        nb = select(socket, &read_set, NULL, NULL, NULL);
-
-        printf("na select\n");
-
-        if (nb == -1) {
-            perror("Error waiting for input");
-            exit(EXIT_FAILURE);
-        }
-
-        if (FD_ISSET(STDIN_FILENO, &read_set)) {
-            // if EOF exit
-            printf("uit stdin\n");
-            read_from_keyboard(socket);
-        }
-
-        if (FD_ISSET(socket, &read_set)) {
-            // if EOF exit
-            printf("uit socket\n");
-            read_from_network(socket);
-        }
-
+    if (pid == -1) {
+        perror("Fork error");
+        exit(EXIT_FAILURE);
     }
+
+    if (pid == 0) {
+        read_from_keyboard(socket);
+        exit(EXIT_SUCCESS);
+    } else {
+        read_from_network(socket);
+    }
+
+    fflush(stdout);
+    printf("Other side has quit\n");
+    kill(pid, SIGINT);
 
     if (close(socket) == -1) {
         perror("Error closing connection");
