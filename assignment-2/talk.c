@@ -106,7 +106,7 @@ char *read_line(int fd) {
     char *p; // pointer to current character in buffer
     int written;
 
-    int character;
+    char character;
     int length = 0;
 
     buffer = malloc(READ_BUFFER_SIZE);
@@ -120,8 +120,24 @@ char *read_line(int fd) {
     p = buffer;
 
     while (1) {
-        written = read(fd, &character, 1);
 
+        /*
+        if (fd == -1) {
+            character = fgetc(stdin);
+            written = 1;
+            if (character == EOF) {
+                written = 0;
+            }
+        } else {
+            written = read(fd, &character, 1);
+            if (written == -1) {
+                perror("Read error");
+                exit(EXIT_FAILURE);
+            }
+        }
+        */
+
+        written = read(fd, &character, 1);
         if (written == -1) {
             perror("Read error");
             exit(EXIT_FAILURE);
@@ -205,24 +221,16 @@ void read_from_network (int socket) {
 
     while (1) {
 
-        //dprint("- we gaan een line lezen (socket)\n");
-
         line = read_line(socket);
 
-        //dprint("- we hebben een line gelezen (socket)\n");
-
         if (line == NULL) {
-            dprint("- dit was EOF (socket)\n");
             break;
         }
 
-        //dprint("Ontvangen: ");
-        //fflush(stdout);
         write_line(STDOUT_FILENO, line);
+        //printf(line);
 
         free(line);
-
-        dprint("- dit was het voor deze line (socket)\n");
 
     }
 
@@ -235,22 +243,16 @@ void read_from_keyboard (int socket) {
 
     while (1) {
 
-        dprint("* we gaan een line lezen (stdin)\n");
-
         line = read_line(STDIN_FILENO);
-
-        dprint("* we hebben een line gelezen (stdin)\n");
+        //line = read_line(-1);
 
         if (line == NULL) {
-            dprint("* dit was EOF (stdin)\n");
             break;
         }
 
         write_line(socket, line);
 
         free(line);
-
-        dprint("* dit was het voor deze line (stdin)\n");
 
     }
 
