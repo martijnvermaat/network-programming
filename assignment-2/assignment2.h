@@ -15,5 +15,7 @@
 #define PENDING_CONNECTIONS_QUEUE 5
 #define NB_PROC 5
 
+#define READ_BUFFER_SIZE 20
+
 
 #endif
