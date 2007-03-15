@@ -19,66 +19,80 @@
 \begin{document}
 \maketitle
 
-
 \section{A Content-Full Server}
 \paragraph{Question 1}
-Issue 1: connection counter in shared memory? depends on what you mean by 'count' and
-what the connection consists of.
-Issue 2: writing to a socket (file descriptor) may write less bytes at a time than
-provided. (also for reading)
+There are multiple issues to keep in mind. First, how are you going to keep track of the connections made. This could be done in shared memory or even through pipes. However this is not necessary, because the moment the server accepts an incoming connection, it can increase the counter and then fork. That way the child will know what to return to the client, because it has a copy of the correct value. The second issue is that you need to make sure that the TCP layer has sent all bytes (this also goes for reading by the client). A third issue is that the moment the server closes the socket and exits, the socket remains for a small amount of time in the TIME\_WAIT state. It does this to catch delayed packets and not to confuse the next user of the socket. In order to circumvent this issue you need to set the socket to REUSEADDR to be able to start the server again (this only works when you are the same user and starting the same program).
 
 Yes, concurrent requests will be processed correctly, but accepted iteratively one at a
 time. Processing of connections can be done concurrently.
 
 \paragraph{Question 2}
-Issue 1: connection counter must be in shared memory (alternative might be pipes).
-Issue 2: mutual exclusion for the connection counter.
-Issue 3: be carefull where and when to remove semaphores and shared memory. always try
-to clean up, but not too soon (e.g. within a child process).
+Again there are multiple issues to keep in mind (additional to the issues discussed in question 1). First, the connection counter must be in shared memory (or as an alternative one could use pipes with the parent process maintaining the counter instead of \texttt{pause}ing). Second, when accessing the connection counter the processes need to do mutual exclusion to prevent races. Third, you need to be careful where and when to remove semaphores and shared memory. When the program exits the shared memory needs to be freed, because otherwise you would have a serious memory leak. So always try to clean up (e.g. by installing signal handlers), but be careful not to do it too soon (e.g. within a child process).
 
 Yes, concurrent requests will be processed correctly, and accepted and processed
 concurrently.
 
 \section{A Talk Program}
 \paragraph{Question 3}
-Iterative, there is no need for something more complicated.
+Iterative, there is no need for something more complicated. The server handles only one conversation, so there's no need making it possible to connect multiple times. Also, when either side disconnects, the other side will disconnect too. Because the server will stop running the moment the conversation has stopped it wouldn't make much sense to fork off a child process to handle the conversation, and then let both parent and child terminate (the same goes for preforked).
 
 \paragraph{Question 4}
-Server and client on the same machine is ok. The problem with >1 server instances on the
-same machine is that the first server will bind to the port (and subsequent instances
-get an address in use error). There are a number of different approaches to this problem,
-depending on the application.
+Server and client on the same machine works perfectly fine. The problem with two or more server instances on the same machine is that the first server will bind to the port (and subsequent instances get an address in use error). There are a number of different approaches to this problem, depending on the application.
 
-1) The server accepts a port number as argument and users just agree on a port number
-   (and have bad luck if another team took the same number).
-
-2) For all or most technical solutions you would need another way to differentiate
-   between the chat sessions than the port number. This can be registration system based
-   on user names, or identifiers for the chat sessions like chat room names.
-
-   a) Use a 'super server' of which address and port number are known to resolve
-      usernames or chatrooms to addresses and port numbers. Servers register themselves
-      to the super server so their address and port number is known (first they try to
-      bind() untill a working port is found). Clients query the super server to know the
-      address and port number of the server they need. (A bit like portmapper.)
-
-      A variant on this scheme would be to route all chat traffic through the super
-      server.
-
-   b) All servers are 'smart servers' which can act as a kind of 'super server'. On an
-      unsuccessful bind() to the default port, the server tries to bind to another port
-      and sends a message to the already running server at the default port just like it
-      would in scheme (a) to the super server. Now, clients initially try to connect to
-      the default port, but only one client should be accepted in the chat directly.
-      Subsequent client requests get a response containing the port number of the chat
-      instance they are looking for.
+\begin{enumerate}
+\item The server accepts a port number as argument and users just agree on a port number (and have bad luck if another team took the same number).
+\item For all or most technical solutions you would need another way to differentiate between the chat sessions than the port number. This can be a registration system based on user names, or identifiers for the chat sessions like chat room names.
+	\begin{enumerate}
+	\item Use a 'super server' of which address and port number are known to resolve user names or chat rooms to addresses and port numbers. Servers register themselves to the super server so their address and port number is known (first they try to bind() until a working port is found). Clients query the super server to know the address and port number of the server they need (which is a bit similar to portmapper). A variant on this scheme would be to route all chat traffic through the super server.
+	\item All servers are 'smart servers' which can act as a kind of 'super server'. On an unsuccessful bind() to the default port, the server tries to bind to another port and sends a message to the already running server at the default port on which port it is currently running, just like it would in scheme (a) to the super server. Now, clients initially try to connect to the default port, but only one client should be accepted in the chat directly. Subsequent client requests get a response containing the port number of the chat instance they are looking for. However, there is a change that the moment there are three servers running, of which only one server is in conversation, subsequent client request connect to the wrong server.
+	\end{enumerate}
+\end{enumerate}
 
 \paragraph{Question 5}
-We are thinking about using pthreads.
+This can be solved in different ways. Our approach is using two processes; one process handles keyboard input, the other process handles network input. The moment the first process finds out the user wants to leave, it signals the child to terminate. When the second process finds out the user on the other side has left, it terminates, generating a signal to the parent that it also has to terminate.
+
+A similar approach can be taken using threads, where two threads handle keyboard input and network input.
+
+A more complicated approach would be using \texttt{select} on the standard input and socket file descriptors, and spawning a thread when either file descriptor has data to deliver.
 
 \section{Program documentation}
 
-Some words here.
+For the assignments we have written a total of 5 programs:
+\begin{center}
+% use packages: array
+\begin{tabular}{ l | p{9cm} }
+client.c & a program that connects to a server and receives and prints an int \\ \hline
+serv1.c & an interative server that sends an int representing how much clients have connected \\ \hline
+serv2.c & an one-process-per-client server that sends an int representing how much clients have connected \\ \hline
+serv3.c & a preforked server that sends an int representing how much clients have connected \\ \hline
+talk.c & a chat program
+\end{tabular}
+\end{center}
 
+\paragraph{client.c}
+The program starts by typing ./client $<$hostname$>$ if you are in the same directory as the binary program. The program will connect to a server running on port 2342, retrieve a int (4 bytes), and display it on the terminal.
 
+The program is designed as follows. It resolves the hostname given as parameter to the program, sets up a connection to the IP address of the server, retrieves an int (4 bytes) and prints it on the terminal. We assume that the TCP layer is able to copy 4 bytes in one go, so we haven't made a procedure to really make sure we've gotten all data.
+
+\paragraph{serv1.c}
+The program starts by typing ./serv1 if you are in the same directory as the binary program. The program will listen on port 2342 for incoming connections, and send an int (4 bytes) with a value representing how many incoming connections it has had (including current connection).
+
+The program is designed as follows. It creates a socket and sets the socket option SO\_REUSEADDR to 1, which makes it possible to invoke the server multiple times after eachother in a short amount of time. When the server has terminated, the socket remains in WAIT\_STATE, making it impossible to reopen the socket during that time. When the socket is set up and ready (socket has been set to server mode), it \texttt{accept}s incoming connections. Upon connection it increases a counter with one, and sends the new value over the socket. Subsequently it closes connection and waits for the next incoming connection.
+
+\paragraph{serv2.c}
+The program starts by typing ./serv2 if you are in the same directory as the binary program. The program will listen on port 2342 for incoming connections, and send an int (4 bytes) with a value representing how many incoming connections it has had (including current connection).
+
+The program is designed as follows. It sets up a socket in server mode just like serv1.c and waits for incoming connections. Upon connection it also increases a counter with one, and then forks off a child which will send that value to the client and terminates. In the mean time the parent process goes back to \texttt{accept}ing new incoming connections. A handler for terminated children handles the necessary \texttt{waitpid}s.
+
+\paragraph{serv3.c} The program starts by typing ./serv3 if you are in the same directory as the binary program. The program will listen on port 2342 for incoming connections, and send an int (4 bytes) with a value representing how many incoming connections it has had (including current connection).
+
+The program is designed as follows. It sets up a socket in server mode and then a piece of shared memory for the connection counter. Instead of going to wait for incoming connections it forks off a number of child processes which will subsequently handle the \texttt{accept}s. When a child receives an incoming connection, it connects to the shared memory and aquires a mutex on it. It increases the connection counter, copies the value to a local variable and releases the mutex, and sends it over the socket. Then it disconnects from shared memory again and closes the connection.
+
+The reason why we keep connecting and disconnecting from the shared memory is because we want to make sure that when there is no active connection, it is safe to remove the shared memory (for example, when the server is terminated by pressing Ctrl + C). In order to not leak memory the server \textbf{must} be terminated by sending it a SIGINT. To be safe to server should install handlers for more types of signals (e.g. SIGHUP, SIGSEGV, SIGTERM), but for this assignment we think SIGINT is enough.
+
+\paragraph{talk.c} The program starts by typing ./talk [hostname] if you are in the same directory as the binary program. When the hostname is omitted the talk program will start in server mode, otherwise it will try to connect to the hostname and start in client mode. Once connected, both sides can talk to eachother.
+
+The program is designed as follows. It first determines if it is started in server or client mode. When it is started in server mode it sets up a socket in server mode and waits for an incoming connection. If it is started in client mode it resolves the hostname to an ip address and connects to it. Then both client and server fork off a child to handle keyboard input; the parent will handle network input. The processes are remarkably symmetric, because they both read and write data from and to a file descriptor. They do this repeatedly until one of the processes received an end-of-file character. The child receives EOF when the user entered Ctrl + D in the terminal, and the parent receives EOF when the other side has closed the connection (\texttt{read} returns 0 bytes, indicating EOF).
+
+When the child has received EOF it will just terminate, which subsequently causes a signal to the parent indicating the child has terminated. The parent then knows it is time to stop and will terminate also. The moment the parent terminates all file descriptors are closed; also the socket. When the parent receives EOF it sends an SIGINT signal to the child and they both terminate.
 \end{document}
