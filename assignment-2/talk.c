@@ -77,12 +77,12 @@ int start_server () {
     server_address.sin_port = htons(SERVER_PORT);
     server_address.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    if(bind(listen_socket, (struct sockaddr *) &server_address, address_length) == -1) {                
+    if (bind(listen_socket, (struct sockaddr *) &server_address, address_length) == -1) {                
         perror("Error binding to socket");
         return -1;
     }
 
-    if(listen(listen_socket, PENDING_CONNECTIONS_QUEUE) == -1) {
+    if (listen(listen_socket, PENDING_CONNECTIONS_QUEUE) == -1) {
         perror("Error setting connection to server mode");
         return -1;
     }
@@ -243,7 +243,6 @@ int main (int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    // chatin' 'round, oh la die jee
     //dprint("chatin' 'round, oh la die jee\n");
 
     signal(SIGCHLD, sig_chld);

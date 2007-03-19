@@ -44,6 +44,7 @@ int main (int argc, char **argv) {
     int client_socket, listen_socket, option_value, connection_counter;
     struct sockaddr_in server_address, client_address;
     socklen_t address_length;
+    pid_t pid;
 
     address_length = sizeof(struct sockaddr_in);
     listen_socket = socket(AF_INET, SOCK_STREAM, 0);
@@ -82,21 +83,30 @@ int main (int argc, char **argv) {
     connection_counter = 0;
 
     while (1) {
+
         client_socket = accept(listen_socket,(struct sockaddr *) &client_address, &address_length);
-        if (client_socket < 0) {
+        if (client_socket == -1) {
             perror("Connection error");
             continue;
         }
 
         connection_counter += 1;
 
-        if (fork() == 0) { // child
+        pid = fork();
+
+        if (pid == -1) {
+            perror("Fork error");
+            exit(EXIT_FAILURE);
+        }
+
+        if (pid == 0) { // child
             treat_request(client_socket, connection_counter);
             close(client_socket);
             exit(EXIT_SUCCESS);
         } else { // parent
             close(client_socket); // no need for duplicate sockets
         }
+
     }
 
     exit(EXIT_SUCCESS);

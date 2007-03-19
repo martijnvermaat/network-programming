@@ -57,19 +57,19 @@ int main (int argc, char **argv) {
     server_address.sin_port = htons(SERVER_PORT);
     server_address.sin_addr.s_addr = htonl(INADDR_ANY);
 
-    if(bind(listen_socket, (struct sockaddr *) &server_address, address_length) == -1) {                
+    if (bind(listen_socket, (struct sockaddr *) &server_address, address_length) == -1) {                
         perror("Error binding to socket");
         exit(EXIT_FAILURE);
     }
 
-    if(listen(listen_socket, PENDING_CONNECTIONS_QUEUE) == -1) {
+    if (listen(listen_socket, PENDING_CONNECTIONS_QUEUE) == -1) {
         perror("Error setting connection to server mode");
         exit(EXIT_FAILURE);
     }
 
     connection_counter = 0;
 
-    while(1) {
+    while (1) {
 
         client_socket = accept(listen_socket, (struct sockaddr *) &client_address, &address_length);
 
