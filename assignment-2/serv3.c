@@ -44,24 +44,31 @@ void setup_shm(void) {
 }
 
 void treat_request(int socket) {
-    int written = 0, current = 0;
+
+    int current, result, written = 0;
+
     if (semop(mutex, &down, 1) == -1) {
         perror("Semaphore error");
         return;
     }
+
     *connection_counter += 1;
     current = htonl(*connection_counter);
-    if(semop(mutex, &up, 1) < 0) { // release mutex
+
+    if (semop(mutex, &up, 1) < 0) {
         perror("Semaphore error");
         return;
     }
-    while(written != sizeof(int)) { // make sure we write an int
-        written = write(socket, (const void *) &current, sizeof(int));
-        if(written == -1) {
-            perror("Connection error");
+
+    while (written < sizeof(int)) {
+        result = write(socket, (const void *) (&current - written), sizeof(int) - written);
+        if (result == -1) {
+            perror("Write error");
             break;
         }
+        written = written + result;
     }
+
 }
 
 void recv_requests(int socket) {

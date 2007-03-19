@@ -103,8 +103,8 @@ char *read_line(int fd) {
 
     char *buffer;
     int buffer_size;
-    char *p; // pointer to current character in buffer
-    int written;
+    char *p;
+    int bytes_read;
 
     char character;
     int length = 0;
@@ -121,29 +121,13 @@ char *read_line(int fd) {
 
     while (1) {
 
-        /*
-        if (fd == -1) {
-            character = fgetc(stdin);
-            written = 1;
-            if (character == EOF) {
-                written = 0;
-            }
-        } else {
-            written = read(fd, &character, 1);
-            if (written == -1) {
-                perror("Read error");
-                exit(EXIT_FAILURE);
-            }
-        }
-        */
-
-        written = read(fd, &character, 1);
-        if (written == -1) {
+        bytes_read = read(fd, &character, 1);
+        if (bytes_read == -1) {
             perror("Read error");
             exit(EXIT_FAILURE);
         }
 
-        if (written == 0) {
+        if (bytes_read == 0) {
             if (length > 0) { // we have a string to return
                 *p = '\0';
             } else { // no string, return null
@@ -186,11 +170,6 @@ char *read_line(int fd) {
 
     }
 
-    // Go to a new line on EOF
-    if (!buffer) {
-        printf("\n");
-    }
-
     return buffer;
 
 }
@@ -206,7 +185,7 @@ void write_line (int fd, char *line) {
         result = write(fd, p, strlen(p));
         if (result == -1) {
             perror("Write error");
-            return; // TODO: break
+            break;
         }
         written = written + result;
         p = p + result;
@@ -215,42 +194,19 @@ void write_line (int fd, char *line) {
 }
 
 
-void read_from_network (int socket) {
+void read_and_write (int in_fileno, int out_fileno) {
 
     char *line;
 
     while (1) {
 
-        line = read_line(socket);
+        line = read_line(in_fileno);
 
         if (line == NULL) {
             break;
         }
 
-        write_line(STDOUT_FILENO, line);
-        //printf(line);
-
-        free(line);
-
-    }
-
-}
-
-
-void read_from_keyboard (int socket) {
-
-    char *line;
-
-    while (1) {
-
-        line = read_line(STDIN_FILENO);
-        //line = read_line(-1);
-
-        if (line == NULL) {
-            break;
-        }
-
-        write_line(socket, line);
+        write_line(out_fileno, line);
 
         free(line);
 
@@ -260,8 +216,6 @@ void read_from_keyboard (int socket) {
 
 
 void sig_chld (int sig) {
-    // TODO: if child stopped, we must stop
-    // TODO: if we stop, child must stop
     while (waitpid(0, NULL, WNOHANG) > 0) {
         ;
     }
@@ -291,7 +245,7 @@ int main (int argc, char **argv) {
     }
 
     // chatin' 'round, oh la die jee
-    dprint("chatin' 'round, oh la die jee\n");
+    //dprint("chatin' 'round, oh la die jee\n");
 
     signal(SIGCHLD, sig_chld);
 
@@ -303,10 +257,10 @@ int main (int argc, char **argv) {
     }
 
     if (pid == 0) {
-        read_from_keyboard(socket);
+        read_and_write(STDIN_FILENO, socket);
         exit(EXIT_SUCCESS);
     } else {
-        read_from_network(socket);
+        read_and_write(socket, STDOUT_FILENO);
     }
 
     fflush(stdout);

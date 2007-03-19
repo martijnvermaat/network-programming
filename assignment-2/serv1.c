@@ -11,16 +11,17 @@
 
 void treat_request (int socket, int connection_counter) {
 
-    int written = 0, current = 0;
+    int current, result, written = 0;
 
     current = htonl(connection_counter);
 
-    while (written != sizeof(int)) {
-        written = write(socket, (const void *) &current, sizeof(int));
-        if (written == -1) {
-            perror("Connection error");
+    while (written < sizeof(int)) {
+        result = write(socket, (const void *) (&current + written), sizeof(int) - written);
+        if (result == -1) {
+            perror("Write error");
             break;
         }
+        written = written + result;
     }
 
 }

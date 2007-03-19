@@ -21,7 +21,24 @@
 
 \section{A Content-Full Server}
 \paragraph{Question 1}
-There are multiple issues to keep in mind. First, how are you going to keep track of the connections made. This could be done in shared memory or even through pipes. However this is not necessary, because the moment the server accepts an incoming connection, it can increase the counter and then fork. That way the child will know what to return to the client, because it has a copy of the correct value. The second issue is that you need to make sure that the TCP layer has sent all bytes (this also goes for reading by the client). A third issue is that the moment the server closes the socket and exits, the socket remains for a small amount of time in the TIME\_WAIT state. It does this to catch delayed packets and not to confuse the next user of the socket. In order to circumvent this issue you need to set the socket to REUSEADDR to be able to start the server again (this only works when you are the same user and starting the same program).
+There are multiple issues to keep in mind. First, how are you going to keep track of the
+connections made. This could be done in shared memory or even through pipes. However
+this is not necessary, because the moment the server accepts an incoming connection, it
+can increase the counter and then fork. That way the child will know what to return to
+the client, because it has a copy of the correct value. Of course, this may or may not
+be satisfactory, depending on the precise application. If a lot of work is done during a
+connection, it might be preferable to only count the connection after that work has
+completed successfully. However, in our case, we think it suffices to increase the
+counter after a connection is established. The model we use in \texttt{serv3.c} can be
+adapted to a more complex counting method.
+
+The second issue is that you
+need to make sure that the TCP layer has sent all bytes (this also goes for reading by
+the client). A third issue is that the moment the server closes the socket and exits,
+the socket remains for a small amount of time in the TIME\_WAIT state. It does this to
+catch delayed packets and not to confuse the next user of the socket. In order to
+circumvent this issue you need to set the socket to REUSEADDR to be able to start the
+server again (this only works when you are the same user and starting the same program).
 
 Yes, concurrent requests will be processed correctly, but accepted iteratively one at a
 time. Processing of connections can be done concurrently.
@@ -34,6 +51,7 @@ concurrently.
 
 \section{A Talk Program}
 \paragraph{Question 3}
+% TODO: actually, we don't even have an iterative server, it just quits after one connection...
 Iterative, there is no need for something more complicated. The server handles only one conversation, so there's no need making it possible to connect multiple times. Also, when either side disconnects, the other side will disconnect too. Because the server will stop running the moment the conversation has stopped it wouldn't make much sense to fork off a child process to handle the conversation, and then let both parent and child terminate (the same goes for preforked).
 
 \paragraph{Question 4}
@@ -43,8 +61,8 @@ Server and client on the same machine works perfectly fine. The problem with two
 \item The server accepts a port number as argument and users just agree on a port number (and have bad luck if another team took the same number).
 \item For all or most technical solutions you would need another way to differentiate between the chat sessions than the port number. This can be a registration system based on user names, or identifiers for the chat sessions like chat room names.
 	\begin{enumerate}
-	\item Use a 'super server' of which address and port number are known to resolve user names or chat rooms to addresses and port numbers. Servers register themselves to the super server so their address and port number is known (first they try to bind() until a working port is found). Clients query the super server to know the address and port number of the server they need (which is a bit similar to portmapper). A variant on this scheme would be to route all chat traffic through the super server.
-	\item All servers are 'smart servers' which can act as a kind of 'super server'. On an unsuccessful bind() to the default port, the server tries to bind to another port and sends a message to the already running server at the default port on which port it is currently running, just like it would in scheme (a) to the super server. Now, clients initially try to connect to the default port, but only one client should be accepted in the chat directly. Subsequent client requests get a response containing the port number of the chat instance they are looking for. However, there is a change that the moment there are three servers running, of which only one server is in conversation, subsequent client request connect to the wrong server.
+	\item Use a `super server' of which address and port number are known to resolve user names or chat rooms to addresses and port numbers. Servers register themselves to the super server so their address and port number is known (first they try to bind() until a working port is found). Clients query the super server to know the address and port number of the server they need (which is a bit similar to portmapper). A variant on this scheme would be to route all chat traffic through the super server.
+	\item All servers are `smart servers' which can act as a kind of `super server'. On an unsuccessful bind() to the default port, the server tries to bind to another port and sends a message to the already running server at the default port on which port it is currently running, just like it would in scheme (a) to the super server. Now, clients initially try to connect to the default port, but only one client should be accepted in the chat directly. Subsequent client requests get a response containing the port number of the chat instance they are looking for. However, there is a chance that the moment there are three servers running, of which only one server is in conversation, subsequent client request connect to the wrong server.
 	\end{enumerate}
 \end{enumerate}
 

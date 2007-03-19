@@ -30,7 +30,7 @@ int main(int argc, char **argv) {
     struct in_addr *server_address;
     struct sockaddr_in server;
     size_t address_length;
-    int server_socket, readbytes = 0, connection_counter = 0;
+    int server_socket, result, bytes_read = 0, connection_counter = 0;
 
     if (argc < 2) {
         printf("Usage: %s hostname\n", argv[0]);
@@ -67,16 +67,16 @@ int main(int argc, char **argv) {
         exit(EXIT_FAILURE);
     }
 
-    /*
-      We assume sizeof(int) number of bytes always get transfered in one go.
-    */
-    readbytes = read(server_socket, (void *) &connection_counter, sizeof(int));
-    if (readbytes == -1) {
-        perror("Read from connection error");
-        exit(EXIT_FAILURE);
-    } else if (readbytes == 0) {
-        fprintf(stderr, "There was nothing to read\n");
-        exit(EXIT_FAILURE);
+    while (bytes_read < sizeof(int)) {
+        result = read(server_socket, (void *) (&connection_counter - bytes_read), sizeof(int) - bytes_read);
+        if (result == -1) {
+            perror("Read from connection error");
+            exit(EXIT_FAILURE);
+        } else if (result == 0) {
+            fprintf(stderr, "There was nothing to read\n");
+            exit(EXIT_FAILURE);
+        }
+        bytes_read = bytes_read + result;
     }
 
     printf("I received: %d\n", ntohl(connection_counter));
