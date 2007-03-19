@@ -216,12 +216,11 @@ void read_and_write (int in_fileno, int out_fileno) {
 
 
 void sig_chld (int sig) {
+    // Okay, there will only be one child, but anyway...
     while (waitpid(0, NULL, WNOHANG) > 0) {
         ;
     }
     signal(SIGCHLD, sig_chld);
-    fflush(stdout);
-    printf("We have quit\n");
     exit(EXIT_SUCCESS);
 }
 
@@ -258,14 +257,14 @@ int main (int argc, char **argv) {
 
     if (pid == 0) {
         read_and_write(STDIN_FILENO, socket);
-        exit(EXIT_SUCCESS);
+        fflush(stdout);
+        printf("We have quit\n");
     } else {
         read_and_write(socket, STDOUT_FILENO);
+        fflush(stdout);
+        printf("Other side has quit\n");
+        kill(pid, SIGINT);
     }
-
-    fflush(stdout);
-    printf("Other side has quit\n");
-    kill(pid, SIGINT);
 
     if (close(socket) == -1) {
         perror("Error closing connection");

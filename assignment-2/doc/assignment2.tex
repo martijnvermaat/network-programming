@@ -88,9 +88,15 @@ talk.c & a chat program
 \end{center}
 
 \paragraph{client.c}
-The program starts by typing ./client $<$hostname$>$ if you are in the same directory as the binary program. The program will connect to a server running on port 2342, retrieve a int (4 bytes), and display it on the terminal.
+The program starts by typing ./client $<$hostname$>$ if you are in the
+same directory as the binary program. The program will connect to a
+server running on port 2342, retrieve an int (4 bytes), and display it
+on the terminal.
 
-The program is designed as follows. It resolves the hostname given as parameter to the program, sets up a connection to the IP address of the server, retrieves an int (4 bytes) and prints it on the terminal. We assume that the TCP layer is able to copy 4 bytes in one go, so we haven't made a procedure to really make sure we've gotten all data.
+The program is designed as follows. It resolves the hostname given as
+parameter to the program, sets up a connection to the IP address of
+the server, retrieves an int (4 bytes) and prints it on the
+terminal.
 
 \paragraph{serv1.c}
 The program starts by typing ./serv1 if you are in the same directory as the binary program. The program will listen on port 2342 for incoming connections, and send an int (4 bytes) with a value representing how many incoming connections it has had (including current connection).
@@ -106,11 +112,38 @@ The program is designed as follows. It sets up a socket in server mode just like
 
 The program is designed as follows. It sets up a socket in server mode and then a piece of shared memory for the connection counter. Instead of going to wait for incoming connections it forks off a number of child processes which will subsequently handle the \texttt{accept}s. When a child receives an incoming connection, it connects to the shared memory and aquires a mutex on it. It increases the connection counter, copies the value to a local variable and releases the mutex, and sends it over the socket. Then it disconnects from shared memory again and closes the connection.
 
-The reason why we keep connecting and disconnecting from the shared memory is because we want to make sure that when there is no active connection, it is safe to remove the shared memory (for example, when the server is terminated by pressing Ctrl + C). In order to not leak memory the server \textbf{must} be terminated by sending it a SIGINT. To be safe to server should install handlers for more types of signals (e.g. SIGHUP, SIGSEGV, SIGTERM), but for this assignment we think SIGINT is enough.
+The reason why we keep connecting and disconnecting from the shared
+memory is because we want to make sure that when there is no active
+connection, it is safe to remove the shared memory (for example, when
+the server is terminated by pressing Ctrl + C). In order to not leak
+memory the server \textbf{must} be terminated by sending it a
+SIGINT. To be safe the server should install handlers for more types of
+signals (e.g. SIGHUP, SIGSEGV, SIGTERM), but for this assignment we
+think SIGINT is enough.
 
-\paragraph{talk.c} The program starts by typing ./talk [hostname] if you are in the same directory as the binary program. When the hostname is omitted the talk program will start in server mode, otherwise it will try to connect to the hostname and start in client mode. Once connected, both sides can talk to eachother.
+\paragraph{talk.c} The program starts by typing ./talk [hostname] if
+you are in the same directory as the binary program. When the hostname
+is omitted the talk program will start in server mode, otherwise it
+will try to connect to the hostname and start in client mode. Once
+connected, both sides can talk to eachother.
 
-The program is designed as follows. It first determines if it is started in server or client mode. When it is started in server mode it sets up a socket in server mode and waits for an incoming connection. If it is started in client mode it resolves the hostname to an ip address and connects to it. Then both client and server fork off a child to handle keyboard input; the parent will handle network input. The processes are remarkably symmetric, because they both read and write data from and to a file descriptor. They do this repeatedly until one of the processes received an end-of-file character. The child receives EOF when the user entered Ctrl + D in the terminal, and the parent receives EOF when the other side has closed the connection (\texttt{read} returns 0 bytes, indicating EOF).
+The program is designed as follows. It first determines if it is
+started in server or client mode. When it is started in server mode it
+sets up a socket in server mode and waits for an incoming
+connection. If it is started in client mode it resolves the hostname
+to an ip address and connects to it. Then both client and server fork
+off a child to handle keyboard input; the parent will handle network
+input. The processes are remarkably symmetric, because they both read
+and write data from and to a file descriptor. They do this repeatedly
+until one of the processes received an end-of-file character. The
+child receives EOF when the user entered Ctrl + D in the terminal, and
+the parent receives EOF when the other side has closed the connection
+(\texttt{read} returns 0 bytes, indicating EOF).
 
-When the child has received EOF it will just terminate, which subsequently causes a signal to the parent indicating the child has terminated. The parent then knows it is time to stop and will terminate also. The moment the parent terminates all file descriptors are closed; also the socket. When the parent receives EOF it sends an SIGINT signal to the child and they both terminate.
+When the child has received EOF it will just terminate, which
+subsequently causes a signal to the parent indicating the child has
+terminated. The parent then knows it is time to stop and will
+terminate also. The moment the parent terminates all file descriptors
+are closed; also the socket. When the parent receives EOF it sends an
+SIGINT signal to the child and they both terminate.
 \end{document}
