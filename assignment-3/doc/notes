@@ -1,0 +1,4 @@
+* Kiezen voor TCP (server moet idempotent zijn met UDP)
+* Programma versie PAPERSTORAGE_VERS uit paperstorage.h halen
+* Hoe zit het met malloc/free van argumenten en return values
+* Hoe zit het met checken van lengte van argumenten (max 255 characters in string)
