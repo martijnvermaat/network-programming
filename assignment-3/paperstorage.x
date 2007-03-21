@@ -1,3 +1,10 @@
+struct add_in {
+    string author <255>;
+    string title  <255>;
+};
+
+typedef int add_out;
+
 typedef int details_in;
 
 struct details_out {
@@ -7,6 +14,7 @@ struct details_out {
 
 program PAPERSTORAGE_PROG {
     version PAPERSTORAGE_VERS {
-        details_out DETAILS_PROC(details_in) = 1;
+        add_out     ADD_PROC(add_in)         = 1;
+        details_out DETAILS_PROC(details_in) = 2;
     } = 1;
 } = 0x3234763;
