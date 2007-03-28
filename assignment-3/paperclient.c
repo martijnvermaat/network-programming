@@ -3,6 +3,8 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
 #include <rpc/rpc.h>
 
 
@@ -16,8 +18,35 @@ void usage_error () {
 void add (char *hostname, char *author, char *title, char *filename) {
 
     CLIENT *client;
+    struct rpc_err rpc_errno;
     add_in in;
     add_out *out;
+    FILE *stream;
+    struct stat file_stat;
+
+    if (stat(filename, &file_stat) == -1) {
+        perror("Cannot stat file");
+        exit(EXIT_FAILURE);
+    }
+
+    in.paper.paper_len = file_stat.st_size;
+    in.paper.paper_val = malloc(file_stat.st_size);
+
+    if (in.paper.paper_val == NULL) {
+        perror("Error allocating memory");
+        exit(EXIT_FAILURE);
+    }
+
+    stream = fopen(filename, "r");
+
+    if (stream == NULL) {
+        perror("Cannot open file");
+        exit(EXIT_FAILURE);
+    }
+
+    if (fread(in.paper.paper_val, file_stat.st_size, 1, stream) != 1) {
+        // eof of error?
+    }
 
     client = clnt_create(hostname, PAPERSTORAGE_PROG, PAPERSTORAGE_VERS, "tcp");
 
@@ -29,13 +58,22 @@ void add (char *hostname, char *author, char *title, char *filename) {
 
     in.author = author;
     in.title = title;
+
     out = add_proc_1(&in, client);
 
     if (out == NULL) {
-        fprintf(stderr, "Error querying %s", hostname);
-        clnt_perror(client, "");
+
+        clnt_geterr(client, &rpc_errno);
+        if (rpc_errno.re_status == RPC_CANTENCODEARGS) {
+            fprintf(stderr, "Invalid argument length\n");
+        } else {
+            fprintf(stderr, "Error querying %s", hostname);
+            clnt_perror(client, "");
+        }
+
         clnt_destroy(client);
         exit(EXIT_FAILURE);
+
     }
 
     printf("Artikel toegevoegd onder nummer %d\n", *out);

@@ -1,6 +1,7 @@
 struct add_in {
     string author <255>;
     string title  <255>;
+    opaque paper  <>;
 };
 
 typedef int add_out;
