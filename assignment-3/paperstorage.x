@@ -8,6 +8,16 @@ typedef int add_out;
 
 typedef int details_in;
 
+/*
+    TODO:
+    union details_out switch(int error) {
+      case 0:
+	    string author <255>;
+        string title  <255>;
+      default:
+	    void;
+    };
+*/
 struct details_out {
     string author <255>;
     string title  <255>;

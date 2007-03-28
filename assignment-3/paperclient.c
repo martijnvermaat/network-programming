@@ -45,8 +45,18 @@ void add (char *hostname, char *author, char *title, char *filename) {
     }
 
     if (fread(in.paper.paper_val, file_stat.st_size, 1, stream) != 1) {
-        // eof of error?
+
+        if (feof(stream)) {
+            fprintf(stderr, "File is unstable: %s\n", filename);
+        } else {
+            perror("Error reading from file");
+        }
+        exit(EXIT_FAILURE);
+
     }
+
+    in.author = author;
+    in.title = title;
 
     client = clnt_create(hostname, PAPERSTORAGE_PROG, PAPERSTORAGE_VERS, "tcp");
 
@@ -56,14 +66,12 @@ void add (char *hostname, char *author, char *title, char *filename) {
         exit(EXIT_FAILURE);
     }
 
-    in.author = author;
-    in.title = title;
-
     out = add_proc_1(&in, client);
 
     if (out == NULL) {
 
         clnt_geterr(client, &rpc_errno);
+        // TODO: use const HOHOI = 3444; in .x and HOHOI from .h
         if (rpc_errno.re_status == RPC_CANTENCODEARGS) {
             fprintf(stderr, "Invalid argument length\n");
         } else {
@@ -83,7 +91,7 @@ void add (char *hostname, char *author, char *title, char *filename) {
 }
 
 
-void details (char *hostname, int number) {
+void details (char *hostname, char *number) {
 
     CLIENT *client;
     details_in in;
@@ -97,7 +105,7 @@ void details (char *hostname, int number) {
         exit(EXIT_FAILURE);
     }
 
-    in = number;
+    in = atoi(number);
     out = details_proc_1(&in, client);
 
     if (out == NULL) {
@@ -107,7 +115,7 @@ void details (char *hostname, int number) {
         exit(EXIT_FAILURE);
     }
 
-    printf("Artikel ``%s'' van ``%s''\n", out->author, out->title);
+    printf("Artikel ``%s'' van ``%s''\n", out->title, out->author);
 
     clnt_destroy(client);
 
@@ -135,7 +143,7 @@ int main (int argc, char **argv) {
         }
 
         // TODO: error checking
-        details(argv[2], atoi(argv[3]));
+        details(argv[2], argv[3]);
 
     } else {
 

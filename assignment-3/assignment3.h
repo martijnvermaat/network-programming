@@ -12,7 +12,7 @@
 #endif
 
 
-#define SERVER_PROC(name) name##_out *name##_proc_1_svc(name##_in *in, struct svc_req *rqstp)
+#define SERVER_PROC(name, var) name##_out *name##_proc_1_svc(name##_in *var, struct svc_req *rqstp)
 
 
 #endif
