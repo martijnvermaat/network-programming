@@ -18,21 +18,31 @@ void usage_error () {
 void add (char *hostname, char *author, char *title, char *filename) {
 
     CLIENT *client;
-    struct rpc_err rpc_errno;
     add_in in;
     add_out *out;
     FILE *stream;
     struct stat file_stat;
+
+    if (strlen(author) > MAX_AUTHOR_LENGTH) {
+        fprintf(stderr, "Maximum length for author is %d\n", MAX_AUTHOR_LENGTH);
+        exit(EXIT_FAILURE);
+    }
+
+    if (strlen(title) > MAX_TITLE_LENGTH) {
+        fprintf(stderr, "Maximum length for title is %d\n", MAX_TITLE_LENGTH);
+        exit(EXIT_FAILURE);
+    }
 
     if (stat(filename, &file_stat) == -1) {
         perror("Cannot stat file");
         exit(EXIT_FAILURE);
     }
 
-    in.paper.paper_len = file_stat.st_size;
-    in.paper.paper_val = malloc(file_stat.st_size);
+    in.paper.number = NULL;
+    in.paper.content->data_len = file_stat.st_size;
+    in.paper.content->data_val = malloc(file_stat.st_size);
 
-    if (in.paper.paper_val == NULL) {
+    if (in.paper.content->data_val == NULL) {
         perror("Error allocating memory");
         exit(EXIT_FAILURE);
     }
@@ -44,7 +54,7 @@ void add (char *hostname, char *author, char *title, char *filename) {
         exit(EXIT_FAILURE);
     }
 
-    if (fread(in.paper.paper_val, file_stat.st_size, 1, stream) != 1) {
+    if (fread(in.paper.content->data_val, file_stat.st_size, 1, stream) != 1) {
 
         if (feof(stream)) {
             fprintf(stderr, "File is unstable: %s\n", filename);
@@ -55,8 +65,8 @@ void add (char *hostname, char *author, char *title, char *filename) {
 
     }
 
-    in.author = author;
-    in.title = title;
+    in.paper.author = author;
+    in.paper.title = title;
 
     client = clnt_create(hostname, PAPERSTORAGE_PROG, PAPERSTORAGE_VERS, "tcp");
 
@@ -69,22 +79,19 @@ void add (char *hostname, char *author, char *title, char *filename) {
     out = add_proc_1(&in, client);
 
     if (out == NULL) {
-
-        clnt_geterr(client, &rpc_errno);
-        // TODO: use const HOHOI = 3444; in .x and HOHOI from .h
-        if (rpc_errno.re_status == RPC_CANTENCODEARGS) {
-            fprintf(stderr, "Invalid argument length\n");
-        } else {
-            fprintf(stderr, "Error querying %s", hostname);
-            clnt_perror(client, "");
-        }
-
+        fprintf(stderr, "Error querying %s", hostname);
+        clnt_perror(client, "");
         clnt_destroy(client);
         exit(EXIT_FAILURE);
-
     }
 
-    printf("Artikel toegevoegd onder nummer %d\n", *out);
+    if (out->error) {
+        fprintf(stderr, "Error adding paper: %s\n", out->add_out_u.reason);
+        clnt_destroy(client);
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Artikel toegevoegd onder nummer %d\n", *(out->add_out_u.paper.number));
 
     clnt_destroy(client);
 
@@ -105,7 +112,7 @@ void details (char *hostname, char *number) {
         exit(EXIT_FAILURE);
     }
 
-    in = atoi(number);
+    in.number = atoi(number);
     out = details_proc_1(&in, client);
 
     if (out == NULL) {
@@ -115,7 +122,13 @@ void details (char *hostname, char *number) {
         exit(EXIT_FAILURE);
     }
 
-    printf("Artikel ``%s'' van ``%s''\n", out->title, out->author);
+    if (out->error) {
+        fprintf(stderr, "Error requesting paper details: %s\n", out->details_out_u.reason);
+        clnt_destroy(client);
+        exit(EXIT_FAILURE);
+    }
+
+    printf("Artikel ``%s'' van ``%s''\n", out->details_out_u.paper.title, out->details_out_u.paper.author);
 
     clnt_destroy(client);
 
@@ -142,7 +155,6 @@ int main (int argc, char **argv) {
             usage_error();
         }
 
-        // TODO: error checking
         details(argv[2], argv[3]);
 
     } else {

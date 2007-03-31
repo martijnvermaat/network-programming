@@ -16,7 +16,7 @@ struct document {
     int    *number                       ;
     string  author   <MAX_AUTHOR_LENGTH> ;
     string  title    <MAX_TITLE_LENGTH>  ;
-    data   *contents                     ;
+    data   *content                      ;
 };
 
 typedef string message <MAX_MESSAGE_LENGTH>;
@@ -39,7 +39,7 @@ union add_out switch(int error) {
 /* DETAILS_PROC input and output types */
 
 struct details_in {
-    int details_in;
+    int number;
 };
 
 union details_out switch(int error) {
