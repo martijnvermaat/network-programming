@@ -1,27 +1,56 @@
+/* XDR Data Description for a Paper Storage Protocol */
+
+
+/* Constant definitions */
+
+const MAX_AUTHOR_LENGTH  = 255;
+const MAX_TITLE_LENGTH   = 255;
+const MAX_MESSAGE_LENGTH = 255;
+
+
+/* Basic datatypes */
+
+typedef opaque data <>;
+
+struct document {
+    int    *number                       ;
+    string  author   <MAX_AUTHOR_LENGTH> ;
+    string  title    <MAX_TITLE_LENGTH>  ;
+    data   *contents                     ;
+};
+
+typedef string message <MAX_MESSAGE_LENGTH>;
+
+
+/* ADD_PROC input and output types */
+
 struct add_in {
-    string author <255>;
-    string title  <255>;
-    opaque paper  <>;
+    document paper;
 };
 
-typedef int add_out;
-
-typedef int details_in;
-
-/*
-    TODO:
-    union details_out switch(int error) {
-      case 0:
-	    string author <255>;
-        string title  <255>;
-      default:
-	    void;
-    };
-*/
-struct details_out {
-    string author <255>;
-    string title  <255>;
+union add_out switch(int error) {
+    case 0:
+        document paper;
+    default:
+        message reason;
 };
+
+
+/* DETAILS_PROC input and output types */
+
+struct details_in {
+    int details_in;
+};
+
+union details_out switch(int error) {
+    case 0:
+        document paper;
+    default:
+        message reason;
+};
+
+
+/* Program and procedures declaration */
 
 program PAPERSTORAGE_PROG {
     version PAPERSTORAGE_VERS {
