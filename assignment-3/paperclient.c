@@ -10,7 +10,7 @@
 
 void usage_error () {
     printf("Usage: paperclient add <hostname> <author> <title> <filename.{pdf|doc}>\n");
-    printf("Usage: paperclient details <hostname> <number>\n");
+    printf("       paperclient details <hostname> <number>\n");
     exit(EXIT_FAILURE);
 }
 
