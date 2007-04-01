@@ -124,10 +124,13 @@ get_out *get_proc_1_svc(get_in *in, struct svc_req *rqstp) {
 list_out *list_proc_1_svc(void *in, struct svc_req *rqstp) {
 
     static list_out out;
-    document_list paper_list, previous;
+    document_list paper_list;
+    document_list *previous;
     int i;
 
-    paper_list = previous = out.papers = NULL;
+    out.papers = NULL;
+
+    previous = &out.papers;
 
     dprint("1\n");
 
@@ -135,39 +138,34 @@ list_out *list_proc_1_svc(void *in, struct svc_req *rqstp) {
 
         dprint("2\n");
 
-        paper_list = malloc(sizeof(document_list)); // This is not free()d!
+        paper_list = malloc(sizeof(document_node)); // This is not free()d!
+        *previous  = paper_list;
 
         dprint("3\n");
-
-        if (previous == NULL) {
-            out.papers = paper_list;
-        } else {
-            previous->next = paper_list;
-        }
-
-        dprint("4\n");
 
         paper_list->item.number = malloc(sizeof(int)); // This is not free()d!
         *paper_list->item.number = i + 1;
 
-        dprint("5\n");
+        dprint("4\n");
 
         paper_list->item.author = papers[i]->author;
         paper_list->item.title = papers[i]->title;
 
-        dprint("6\n");
+        dprint("5\n");
 
         paper_list->item.content = malloc(sizeof(data)); // This is not free()d!
         paper_list->item.content->data_len = papers[i]->size;
         paper_list->item.content->data_val = papers[i]->data;
 
-        dprint("7\n");
+        dprint("6\n");
 
-        paper_list->next = NULL;
+        previous = &paper_list->next;
 
     }
 
-    dprint("8\n");
+    *previous = NULL;
+
+    dprint("7\n");
 
     return &out;
 
