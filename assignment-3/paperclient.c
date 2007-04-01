@@ -39,7 +39,7 @@ void add (char *hostname, char *author, char *title, char *filename) {
     }
 
     in.paper.number = NULL;
-    in.paper.content->data_len = file_stat.st_size;
+    in.paper.content->data_len = file_stat.st_size; // TODO: check for NULL pointers
     in.paper.content->data_val = malloc(file_stat.st_size);
 
     if (in.paper.content->data_val == NULL) {
