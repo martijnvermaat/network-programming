@@ -12,6 +12,7 @@ void usage_error () {
     printf("Usage: paperclient add <hostname> <author> <title> <filename.{pdf|doc}>\n");
     printf("       paperclient details <hostname> <number>\n");
     printf("       paperclient fetch <hostname> <number>\n");
+    printf("       paperclient list <hostname>\n");
     exit(EXIT_FAILURE);
 }
 
@@ -184,6 +185,41 @@ void fetch (char *hostname, char *number) {
 }
 
 
+void list (char *hostname) {
+
+    CLIENT *client;
+    list_out *out;
+    document_list documents;
+
+    client = clnt_create(hostname, PAPERSTORAGE_PROG, PAPERSTORAGE_VERS, "tcp");
+
+    if (client == NULL) {
+        fprintf(stderr, "Error connecting to %s", hostname);
+        clnt_pcreateerror("");
+        exit(EXIT_FAILURE);
+    }
+
+    out = list_proc_1(NULL, client);
+
+    if (out == NULL) {
+        fprintf(stderr, "Error querying %s", hostname);
+        clnt_perror(client, "");
+        clnt_destroy(client);
+        exit(EXIT_FAILURE);
+    }
+
+    documents = out->papers;
+
+    while (documents) {
+        printf("Paper %d\n  Author: ``%s''\n  Title:  ``%s''\n", *(documents->item.number), documents->item.author, documents->item.title);
+        documents = documents->next;
+    }
+
+    clnt_destroy(client);
+
+}
+
+
 int main (int argc, char **argv) {
 
     if (argc < 2) {
@@ -213,6 +249,14 @@ int main (int argc, char **argv) {
         }
 
         fetch(argv[2], argv[3]);
+
+    } else if (!strcmp(argv[1], "list")) {
+
+        if (argc < 3) {
+            usage_error();
+        }
+
+        list(argv[2]);
 
     } else {
 

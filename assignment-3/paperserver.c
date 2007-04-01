@@ -9,6 +9,10 @@
 #define PAPER_NOT_FOUND "Paper not found"
 
 
+/*
+  The paper number is implicit in the location of the paper in the buffer
+  because we number them successively and never remove one.
+*/
 struct paper_t {
     char author[256];
     char title[256];

@@ -19,6 +19,13 @@ struct document {
     data   *content                      ;
 };
 
+typedef struct document_node *document_list;
+
+struct document_node {
+    document      item;
+    document_list next;
+};
+
 typedef string message <MAX_MESSAGE_LENGTH>;
 
 
@@ -51,11 +58,21 @@ union get_out switch(int error) {
 };
 
 
+/* LIST_PROC input and output types */
+
+/* input type is void */
+
+struct list_out {
+    document_list papers;
+};
+
+
 /* Program and procedures declaration */
 
 program PAPERSTORAGE_PROG {
     version PAPERSTORAGE_VERS {
-        add_out ADD_PROC(add_in) = 1;
-        get_out GET_PROC(get_in) = 2;
+        add_out  ADD_PROC(add_in) = 1;
+        get_out  GET_PROC(get_in) = 2;
+        list_out LIST_PROC(void)  = 3;
     } = 1;
 } = 0x3234763;
