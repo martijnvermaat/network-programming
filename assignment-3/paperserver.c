@@ -5,6 +5,7 @@
 #include <unistd.h>
 
 
+#define PAPER_BUFFER_SIZE 10
 #define PAPER_NOT_FOUND "Paper not found"
 
 
@@ -21,51 +22,58 @@ int papers_size = 0;
 int papers_count = 0;
 
 
-SERVER_PROC(details, in) {
+get_out *get_proc_1_svc(get_in *in, struct svc_req *rqstp) {
 
-    static details_out out;
+    static get_out out;
 
     // TODO: check for NULL pointers
 
     out.error = 0;
 
-    if (in->number > papers_count) {
+    if (in->number < 1 || in->number > papers_count) {
         out.error = 1;
-        out.details_out_u.reason = malloc(strlen(PAPER_NOT_FOUND) + 1);
-        strcpy(out.details_out_u.reason, PAPER_NOT_FOUND);
+        out.get_out_u.reason = malloc(strlen(PAPER_NOT_FOUND) + 1);
+        strcpy(out.get_out_u.reason, PAPER_NOT_FOUND);
         return &out;
     }
 
     // How nice of us to also include the paper number
-    out.details_out_u.paper.number = malloc(sizeof(int));
-    *out.details_out_u.paper.number = in->number;
+    out.get_out_u.paper.number = malloc(sizeof(int));
+    *out.get_out_u.paper.number = in->number;
 
-    // TODO: shouldn't we memcpy this?
-    out.details_out_u.paper.author = papers[in->number - 1]->author;
-    out.details_out_u.paper.title = papers[in->number - 1]->title;
+    out.get_out_u.paper.author = papers[in->number - 1]->author;
+    out.get_out_u.paper.title = papers[in->number - 1]->title;
+
+    if (in->complete) {
+        out.get_out_u.paper.content = malloc(sizeof(data)); // TODO: malloc error
+        out.get_out_u.paper.content->data_len = papers[in->number - 1]->size;
+        out.get_out_u.paper.content->data_val = papers[in->number - 1]->data;
+    } else {
+        out.get_out_u.paper.content = NULL;
+    }
 
     return &out;
 
 }
 
 
-SERVER_PROC(add, in) {
+add_out *add_proc_1_svc(add_in *in, struct svc_req *rqstp) {
 
     struct paper_t *paper;
     static add_out out;
 
     out.error = 0;
 
+    // Initialize paper buffer
     if (papers_size == 0) {
-        papers = malloc(10 * sizeof(void*)); // TODO: malloc failure
-        papers_size = 10;
+        papers = malloc(PAPER_BUFFER_SIZE * sizeof(void*)); // TODO: malloc failure
+        papers_size = PAPER_BUFFER_SIZE;
     }
 
+    // Resize paper buffer
     if (papers_count == papers_size) {
-
-        papers = realloc(papers, papers_size + (10 * sizeof(void*))); // TODO: failure
-        papers_size += 10;
-
+        papers = realloc(papers, papers_size + (PAPER_BUFFER_SIZE * sizeof(void*))); // TODO: malloc failure
+        papers_size += PAPER_BUFFER_SIZE;
     }
 
     // TODO: check for NULL pointers
@@ -81,10 +89,11 @@ SERVER_PROC(add, in) {
 
     papers[papers_count] = paper;
 
+    papers_count++;
+
     // TODO: check if paper exists
 
     /*
-    fprintf(stderr, "Received paper from ``%s'' with title ``%s''\n", in->author, in->title);
     if (fwrite(in->paper.paper_val, in->paper.paper_len, 1, stdout) != 1) {
         perror("Error writing to file");
         exit(EXIT_FAILURE);
@@ -93,7 +102,9 @@ SERVER_PROC(add, in) {
     fprintf(stderr, "Ok, paper_len: %d\n", in->paper.paper_len);
     */
 
-    papers_count++;
+    dprint("Received paper %d from ``%s'' with title ``%s''\n", papers_count, in->paper.author, in->paper.title);
+
+    out.add_out_u.paper.content = NULL;
 
     out.add_out_u.paper.number = malloc(sizeof(int));
     *out.add_out_u.paper.number = papers_count;

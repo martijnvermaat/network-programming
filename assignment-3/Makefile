@@ -10,10 +10,10 @@ paperserver: paperserver.o paperstorage_xdr.o paperstorage_svc.o
 paperclient: paperclient.o paperstorage_xdr.o paperstorage_clnt.o
 	$(CC) $(CFLAGS) -o paperclient paperclient.o paperstorage_clnt.o paperstorage_xdr.o $(LDFLAGS)
 
-paperserver.o: paperserver.c paperstorage.h
+paperserver.o: paperserver.c paperstorage.h assignment3.h
 	$(CC) $(CFLAGS) -c paperserver.c
 
-paperclient.o: paperclient.c paperstorage.h
+paperclient.o: paperclient.c paperstorage.h assignment3.h
 	$(CC) $(CFLAGS) -c paperclient.c
 
 paperstorage_clnt.o: paperstorage_clnt.c paperstorage.h

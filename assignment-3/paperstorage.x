@@ -36,13 +36,14 @@ union add_out switch(int error) {
 };
 
 
-/* DETAILS_PROC input and output types */
+/* GET_PROC input and output types */
 
-struct details_in {
+struct get_in {
     int number;
+    int complete;
 };
 
-union details_out switch(int error) {
+union get_out switch(int error) {
     case 0:
         document paper;
     default:
@@ -54,7 +55,7 @@ union details_out switch(int error) {
 
 program PAPERSTORAGE_PROG {
     version PAPERSTORAGE_VERS {
-        add_out     ADD_PROC(add_in)         = 1;
-        details_out DETAILS_PROC(details_in) = 2;
+        add_out ADD_PROC(add_in) = 1;
+        get_out GET_PROC(get_in) = 2;
     } = 1;
 } = 0x3234763;
