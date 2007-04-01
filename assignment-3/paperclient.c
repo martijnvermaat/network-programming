@@ -189,7 +189,8 @@ void list (char *hostname) {
 
     CLIENT *client;
     list_out *out;
-    document_list documents;
+    document_list papers;
+    int paper_count = 0;
 
     client = clnt_create(hostname, PAPERSTORAGE_PROG, PAPERSTORAGE_VERS, "tcp");
 
@@ -208,11 +209,18 @@ void list (char *hostname) {
         exit(EXIT_FAILURE);
     }
 
-    documents = out->papers;
+    papers = out->papers;
 
-    while (documents) {
-        printf("Paper %d\n  Author: ``%s''\n  Title:  ``%s''\n", *(documents->item.number), documents->item.author, documents->item.title);
-        documents = documents->next;
+    while (papers) {
+        paper_count++;
+        printf("Paper %d\n  Author: ``%s''\n  Title:  ``%s''\n", *(papers->item.number), papers->item.author, papers->item.title);
+        papers = papers->next;
+    }
+
+    if (paper_count == 1) {
+        printf("1 paper stored\n");
+    } else {
+        printf("%d papers stored\n", paper_count);
     }
 
     clnt_destroy(client);

@@ -2,8 +2,10 @@
 * Programma versie PAPERSTORAGE_VERS uit paperstorage.h halen
 * Hoe zit het met malloc/free van argumenten en return values
 * Hoe zit het met checken van lengte van argumenten (max 255 characters in string)
+* Alle malloc()s langs lopen om te kijken of ze wel ge-free()-d worden (indien nodig)
 
 http://www.faqs.org/rfcs/rfc1832.html
 http://ou800doc.caldera.com/en/SDK_netapi/rpcpC.rpcgen_xdr.html
 http://www.google.com/codesearch?hl=en&q=show:1eBUjoaX3QE:FBt1YwFMXys:xwSiN5E0tBY&sa=N&ct=rd&cs_p=http://www-static.cc.gatech.edu/classes/AY2003/cs4210_summer/rpc-example.tar&cs_f=rpc-example/server.c
 http://www.google.com/codesearch?hl=en&q=show:H2Tjs0TCPUQ:ftSAcjJr_xY:GW_r6fRmmlQ&sa=N&ct=rd&cs_p=http://ftp.osuosl.org/pub/FreeBSD/distfiles/flick-2.1-src.tar.gz&cs_f=flick-2.1/test/examples/dyfs/yfs.x
+http://www2.cs.uregina.ca/~hamilton/courses/430/notes/rpc.html
