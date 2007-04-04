@@ -25,6 +25,8 @@ void add (char *hostname, char *author, char *title, char *filename) {
     FILE *stream;
     struct stat file_stat;
 
+    // TODO: check filename extension
+
     if (strlen(author) > MAX_AUTHOR_LENGTH) {
         fprintf(stderr, "Maximum length for author is %d\n", MAX_AUTHOR_LENGTH);
         exit(EXIT_FAILURE);
@@ -133,7 +135,7 @@ void details (char *hostname, char *number) {
         exit(EXIT_FAILURE);
     }
 
-    printf("Paper %d\n  Author: ``%s''\n  Title:  ``%s''\n", *(out->get_out_u.paper.number), out->get_out_u.paper.author, out->get_out_u.paper.title);
+    printf("Author: ``%s''\nTitle:  ``%s''\n", out->get_out_u.paper.author, out->get_out_u.paper.title);
 
     clnt_destroy(client);
 

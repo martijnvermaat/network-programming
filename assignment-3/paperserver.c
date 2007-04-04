@@ -132,40 +132,26 @@ list_out *list_proc_1_svc(void *in, struct svc_req *rqstp) {
 
     previous = &out.papers;
 
-    dprint("1\n");
-
     for (i = 0; i < papers_count; i++) {
-
-        dprint("2\n");
 
         paper_list = malloc(sizeof(document_node)); // This is not free()d!
         *previous  = paper_list;
 
-        dprint("3\n");
-
         paper_list->item.number = malloc(sizeof(int)); // This is not free()d!
         *paper_list->item.number = i + 1;
-
-        dprint("4\n");
 
         paper_list->item.author = papers[i]->author;
         paper_list->item.title = papers[i]->title;
 
-        dprint("5\n");
-
         paper_list->item.content = malloc(sizeof(data)); // This is not free()d!
         paper_list->item.content->data_len = papers[i]->size;
         paper_list->item.content->data_val = papers[i]->data;
-
-        dprint("6\n");
 
         previous = &paper_list->next;
 
     }
 
     *previous = NULL;
-
-    dprint("7\n");
 
     return &out;
 
