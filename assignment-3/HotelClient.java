@@ -21,6 +21,11 @@ public class HotelClient {
     }
 
 
+    public Set<String> registeredGuests() throws RemoteException {
+        return hotel.registeredGuests();
+    }
+
+
     public void bookRoom(String guest) throws NotAvailableException, RemoteException {
         hotel.bookRoom(guest);
     }
@@ -120,6 +125,40 @@ public class HotelClient {
 
 
     private static void guests(String host) {
+
+        Set<String> guests = null;
+
+        try {
+
+            HotelClient c = new HotelClient(host);
+
+            guests = c.registeredGuests();
+
+        } catch (MalformedURLException e) {
+            System.err.println("Invalid host: " + host);
+            System.exit(1);
+        } catch (NotBoundException e) {
+            System.err.println("Hotel service not found");
+            System.exit(1);
+        } catch (RemoteException e) {
+            System.err.println("Error contacting hotel service: " + e.getMessage());
+            System.exit(1);
+        }
+
+
+        if (guests == null || guests.isEmpty()) {
+
+            System.out.println("No registered guests");
+
+        } else {
+
+            System.out.println("Registered guests:");
+
+            for (String g : guests) {
+                System.out.println(g);
+            }
+
+        }
 
     }
 
