@@ -1,38 +1,40 @@
-
-import java.rmi.*;
-import java.rmi.server.*;
-import java.rmi.registry.*;
+import java.rmi.server.UnicastRemoteObject;
+import java.rmi.RemoteException;
 import java.util.Set;
 import java.util.HashSet;
 import java.util.List;
 import java.util.ArrayList;
 
 
-class Hotel extends UnicastRemoteObject implements HotelInterface {
+class HotelImpl extends UnicastRemoteObject implements Hotel {
 
 
     private Set<Room> rooms;
 
 
-    public void bookRoom(RoomType type, String guest) throws NotAvailableException, RemoteException {
+    public void bookRoom(RoomType type, String guest)
+        throws NotAvailableException, RemoteException {
 
     }
 
 
-    public List<String> registeredGuests() throws RemoteException {
+    public List<String> registeredGuests()
+        throws RemoteException {
         ArrayList<String> list = new ArrayList<String>();
         return list;
 
     }
 
 
-    public Set<Available> availableRooms() throws RemoteException {
+    public Set<Available> availableRooms()
+        throws RemoteException {
         HashSet<Available> set = new HashSet<Available>();
         return set;
     }
 
 
-    public Hotel() throws RemoteException {
+    public HotelImpl()
+        throws RemoteException {
 
         rooms = new HashSet<Room>(); /* be carefull, HashSet is not synchronized */
 
