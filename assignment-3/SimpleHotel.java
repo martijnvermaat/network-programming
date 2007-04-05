@@ -9,7 +9,6 @@ class SimpleHotel extends UnicastRemoteObject implements Hotel {
 
     private Set<Room> rooms;
 
-
     synchronized public void bookRoom(int roomType, String guest)
         throws NotAvailableException, RemoteException {
 
@@ -26,6 +25,32 @@ class SimpleHotel extends UnicastRemoteObject implements Hotel {
                     } catch (NotAvailableException e) {
                         System.err.println("HotelImpl exception: available room is booked");
                     }
+                }
+            }
+
+        }
+
+        if (!booked) {
+            throw new NotAvailableException();
+        }
+
+    }
+
+
+    synchronized public void bookRoom(String guest)
+        throws NotAvailableException, RemoteException {
+
+        boolean booked = false;
+
+        for (Room room : this.rooms) {
+
+            if (room.isAvailable()) {
+                try {
+                    room.book(guest);
+                    booked = true;
+                    break;
+                } catch (NotAvailableException e) {
+                    System.err.println("HotelImpl exception: available room is booked");
                 }
             }
 

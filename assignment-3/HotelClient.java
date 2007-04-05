@@ -21,6 +21,16 @@ public class HotelClient {
     }
 
 
+    public void bookRoom(String guest) throws NotAvailableException, RemoteException {
+        hotel.bookRoom(guest);
+    }
+
+
+    public void bookRoom(int type, String guest) throws NotAvailableException, RemoteException {
+        hotel.bookRoom(type, guest);
+    }
+
+
     private static void usage() {
         System.out.println("usage: blaaaaa");
         System.exit(1);
@@ -35,14 +45,8 @@ public class HotelClient {
 
             HotelClient c = new HotelClient(host);
 
-            try {
-                set = c.availableRooms();
-            } catch (RemoteException e) {
-                System.err.println("Error calling hotel service: " + e.getMessage());
-                System.exit(1);
-            }
-
-        } catch (MalformedURLException e) {
+            set = c.availableRooms();
+         } catch (MalformedURLException e) {
             System.err.println("Invalid host: " + host);
             System.exit(1);
         } catch (NotBoundException e) {
@@ -73,8 +77,45 @@ public class HotelClient {
     }
 
 
-    private static void book(String host, String type, String guest) {
+    private static void book(String host, String guest) {
+        try {
+            HotelClient c = new HotelClient(host);
+            try {
+                c.bookRoom(guest);
+            } catch (NotAvailableException e) {
+                System.err.println("Unfortunately we're full");
+            }
+        } catch (MalformedURLException e) {
+            System.err.println("Invalid host: " + host);
+            System.exit(1);
+        } catch (NotBoundException e) {
+            System.err.println("Hotel service not found");
+            System.exit(1);
+        } catch (RemoteException e) {
+            System.err.println("Error contacting hotel service: " + e.getMessage());
+            System.exit(1);
+        }
+    }
 
+
+    private static void book(String host, int type, String guest) {
+        try {
+            HotelClient c = new HotelClient(host);
+            try {
+                c.bookRoom(type, guest);
+            } catch (NotAvailableException e) {
+                System.err.println("Unfortunately we're full");
+            }
+        } catch (MalformedURLException e) {
+            System.err.println("Invalid host: " + host);
+            System.exit(1);
+        } catch (NotBoundException e) {
+            System.err.println("Hotel service not found");
+            System.exit(1);
+        } catch (RemoteException e) {
+            System.err.println("Error contacting hotel service: " + e.getMessage());
+            System.exit(1);
+        }
     }
 
 
@@ -99,11 +140,18 @@ public class HotelClient {
 
         } else if (args[0].equals("book")) {
 
-            if (args.length < 4) {
+            if (args.length < 3) {
                 usage();
             }
-
-            book(args[1], args[2], args[3]);
+            if (args.length < 4) {
+                book(args[1], args[2]);
+            } else {
+                try {
+                    book(args[1], Integer.parseInt(args[2]), args[3]);
+                } catch (NumberFormatException e) {
+                    usage();
+                }
+            }
 
         } else if (args[0].equals("guests")) {
 

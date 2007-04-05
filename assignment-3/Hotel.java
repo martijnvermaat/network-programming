@@ -8,6 +8,9 @@ public interface Hotel extends Remote {
     public void bookRoom(int roomType, String guest)
         throws NotAvailableException, RemoteException;
 
+    public void bookRoom(String guest)
+        throws NotAvailableException, RemoteException;
+
     public Set<String> registeredGuests()
         throws RemoteException;
 
