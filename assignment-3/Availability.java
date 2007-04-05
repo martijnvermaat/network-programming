@@ -1,12 +1,31 @@
 import java.io.Serializable;
 
 
-public class Availability implements Serializable {
+public class Availability implements Serializable, Comparable<Availability> {
 
 
     private int   type;
     private float price;
     private int   numberOfRooms;
+
+
+    public int compareTo(Availability a) {
+
+        if (getType() < a.getType()) {
+            return -1;
+        } else if (a.getType() < getType()) {
+            return 1;
+        }
+
+        if (getNumberOfRooms() < a.getNumberOfRooms()) {
+            return -1;
+        } else if (a.getNumberOfRooms() < getNumberOfRooms()) {
+            return 1;
+        }
+
+        return 0;
+
+    }
 
 
     public int getType() {

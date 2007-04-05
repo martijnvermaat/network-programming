@@ -3,6 +3,8 @@ import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.rmi.Naming;
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 
 public class HotelClient {
@@ -36,21 +38,23 @@ public class HotelClient {
     }
 
 
-    private static void usage() {
-        System.out.println("usage: blaaaaa");
+    private static void usageError() {
+        System.out.println("usage: hotelclient list <hostname>");
+        System.out.println("       hotelclient book <hostname> [type] <guest>");
+        System.out.println("       hotelclient guests <hostname>");
         System.exit(1);
     }
 
 
     private static void list(String host) {
 
-        Set<Availability> set = null;
+        Set<Availability> availables = null;
 
         try {
 
             HotelClient c = new HotelClient(host);
 
-            set = c.availableRooms();
+            availables = c.availableRooms();
          } catch (MalformedURLException e) {
             System.err.println("Invalid host: " + host);
             System.exit(1);
@@ -63,7 +67,7 @@ public class HotelClient {
         }
 
 
-        if (set == null || set.isEmpty()) {
+        if (availables == null || availables.isEmpty()) {
 
             System.out.println("No available rooms");
 
@@ -71,25 +75,31 @@ public class HotelClient {
 
             System.out.println("Available rooms:");
 
-            for (Availability a : set) {
-                System.out.println(a.getNumberOfRooms() + " rooms of type " +
-                                   a.getType() + " at " +
-                                   a.getPrice() + " euros per night");
+            SortedSet<Availability> sorted_availables = new TreeSet<Availability>(availables);
+
+            for (Availability a : sorted_availables) {
+                System.out.printf("  %3d rooms of type %3d at %.2f euros per night\n",a.getNumberOfRooms(), a.getType(), a.getPrice());
             }
 
         }
+
+        System.exit(0);
 
     }
 
 
     private static void book(String host, String guest) {
+
         try {
+
             HotelClient c = new HotelClient(host);
             try {
                 c.bookRoom(guest);
             } catch (NotAvailableException e) {
                 System.err.println("Unfortunately we're full");
+                System.exit(1);
             }
+
         } catch (MalformedURLException e) {
             System.err.println("Invalid host: " + host);
             System.exit(1);
@@ -100,17 +110,24 @@ public class HotelClient {
             System.err.println("Error contacting hotel service: " + e.getMessage());
             System.exit(1);
         }
+
+        System.exit(0);
+
     }
 
 
     private static void book(String host, int type, String guest) {
+
         try {
+
             HotelClient c = new HotelClient(host);
             try {
                 c.bookRoom(type, guest);
             } catch (NotAvailableException e) {
-                System.err.println("Unfortunately we're full");
+                System.err.println("No rooms of type " + type + " available");
+                System.exit(1);
             }
+
         } catch (MalformedURLException e) {
             System.err.println("Invalid host: " + host);
             System.exit(1);
@@ -121,6 +138,9 @@ public class HotelClient {
             System.err.println("Error contacting hotel service: " + e.getMessage());
             System.exit(1);
         }
+
+        System.exit(0);
+
     }
 
 
@@ -154,11 +174,15 @@ public class HotelClient {
 
             System.out.println("Registered guests:");
 
-            for (String g : guests) {
-                System.out.println(g);
+            SortedSet<String> sorted_guests = new TreeSet<String>(guests);
+
+            for (String g : sorted_guests) {
+                System.out.println("  " + g);
             }
 
         }
+
+        System.exit(0);
 
     }
 
@@ -166,13 +190,13 @@ public class HotelClient {
     public static void main(String[] args) {
 
         if (args.length < 1) {
-            usage();
+            usageError();
         }
 
         if (args[0].equals("list")) {
 
             if (args.length < 2) {
-                usage();
+                usageError();
             }
 
             list(args[1]);
@@ -180,7 +204,7 @@ public class HotelClient {
         } else if (args[0].equals("book")) {
 
             if (args.length < 3) {
-                usage();
+                usageError();
             }
             if (args.length < 4) {
                 book(args[1], args[2]);
@@ -188,19 +212,21 @@ public class HotelClient {
                 try {
                     book(args[1], Integer.parseInt(args[2]), args[3]);
                 } catch (NumberFormatException e) {
-                    usage();
+                    usageError();
                 }
             }
 
         } else if (args[0].equals("guests")) {
 
             if (args.length < 2) {
-                usage();
+                usageError();
             }
 
             guests(args[1]);
 
         }
+
+        usageError();
 
     }
 
