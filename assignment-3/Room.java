@@ -1,35 +1,42 @@
 public class Room {
 
 
-    private RoomType type;
-    private boolean reserved = false;
-    private String guest = null;
+    private RoomType roomType;
+    private boolean  available;
+    private String   guest;
 
 
-    public boolean isReserved() {
-        return this.reserved;
+    public RoomType getRoomType() {
+        return this.roomType;
     }
 
 
-    public void reserve(String guest) throws NotAvailableException {
-        if (isReserved()) {
-            throw new NotAvailableException();
-        }
-        this.reserved = true;
-        this.guest = guest;
-    }
-
-
-    public String guest() throws NotReservedException {
-        if (!isReserved()) {
-            throw new NotReservedException();
+    public String getGuest() throws NotBookedException {
+        if (isAvailable()) {
+            throw new NotBookedException();
         }
         return this.guest;
     }
 
 
-    public Room (RoomType type) {
-        this.type = type;
+    public boolean isAvailable() {
+        return this.available;
+    }
+
+
+    public void book(String guest) throws NotAvailableException {
+        if (!isAvailable()) {
+            throw new NotAvailableException();
+        }
+        this.available = false;
+        this.guest = guest;
+    }
+
+
+    public Room (RoomType roomType) {
+        this.roomType = roomType;
+        this.available = true;
+        this.guest = null;
     }
 
 

@@ -7,8 +7,8 @@ public class HotelServer {
     public HotelServer() {
 
         try {
-            Hotel h = new HotelImpl();
-            Naming.rebind("rmi://localhost/HotelService", h);
+            Hotel ourHotel = new SimpleHotel();
+            Naming.rebind("rmi://localhost/HotelService", ourHotel);
         } catch(Exception e) {
             System.err.println("HotelServer exception: " + e.getMessage());
         }

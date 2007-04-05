@@ -7,19 +7,19 @@ class RoomType {
     private float price;
 
 
-    public int type() {
+    public int getType() {
         return this.type;
     }
 
 
-    public float price() {
-        return this.price();
+    public float getPrice() {
+        return this.price;
     }
 
 
     public RoomType(float price) {
         this.price = price;
-        this.type = highestType++;
+        this.type = ++highestType;
     }
 
 
