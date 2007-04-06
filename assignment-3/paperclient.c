@@ -119,7 +119,7 @@ void details (char *hostname, char *number) {
     }
 
     in.number = atoi(number);
-    in.complete = 0;
+    in.representation = SPARSE;
     out = get_proc_1(&in, client);
 
     if (out == NULL) {
@@ -159,7 +159,7 @@ void fetch (char *hostname, char *number) {
     }
 
     in.number = atoi(number);
-    in.complete = 1;
+    in.representation = DETAILED;
     out = get_proc_1(&in, client);
 
     if (out == NULL) {

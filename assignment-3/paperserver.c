@@ -108,7 +108,7 @@ get_out *get_proc_1_svc(get_in *in, struct svc_req *rqstp) {
     out.get_out_u.paper.author = papers[in->number - 1]->author;
     out.get_out_u.paper.title = papers[in->number - 1]->title;
 
-    if (in->complete) {
+    if (in->representation == DETAILED) {
         out.get_out_u.paper.content = malloc(sizeof(data)); // TODO: malloc error (and is not free()d)
         out.get_out_u.paper.content->data_len = papers[in->number - 1]->size;
         out.get_out_u.paper.content->data_val = papers[in->number - 1]->data;

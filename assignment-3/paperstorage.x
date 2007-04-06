@@ -15,6 +15,11 @@ enum status {
     STATUS_FAILURE = 2
 };
 
+enum result_type {
+    SPARSE   = 1,
+    DETAILED = 2
+};
+
 typedef opaque data <>;
 
 struct document {
@@ -52,7 +57,7 @@ union add_out switch(status result) {
 
 struct get_in {
     int number;
-    int complete;
+    result_type representation;
 };
 
 union get_out switch(status result) {
