@@ -31,7 +31,7 @@ add_out *add_proc_1_svc(add_in *in, struct svc_req *rqstp) {
     struct paper_t *paper;
     static add_out out;
 
-    out.error = 0;
+    out.result = STATUS_SUCCESS;
 
     // Initialize paper buffer
     if (papers_size == 0) {
@@ -92,10 +92,10 @@ get_out *get_proc_1_svc(get_in *in, struct svc_req *rqstp) {
 
     // TODO: check for NULL pointers
 
-    out.error = 0;
+    out.result = STATUS_SUCCESS;
 
     if (in->number < 1 || in->number > papers_count) {
-        out.error = 1;
+        out.result = STATUS_FAILURE;
         out.get_out_u.reason = malloc(strlen(PAPER_NOT_FOUND) + 1);
         strcpy(out.get_out_u.reason, PAPER_NOT_FOUND);
         return &out;

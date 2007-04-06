@@ -91,7 +91,7 @@ void add (char *hostname, char *author, char *title, char *filename) {
         exit(EXIT_FAILURE);
     }
 
-    if (out->error) {
+    if (out->result == STATUS_FAILURE) {
         fprintf(stderr, "Error adding paper: %s\n", out->add_out_u.reason);
         clnt_destroy(client);
         exit(EXIT_FAILURE);
@@ -129,7 +129,7 @@ void details (char *hostname, char *number) {
         exit(EXIT_FAILURE);
     }
 
-    if (out->error) {
+    if (out->result == STATUS_FAILURE) {
         fprintf(stderr, "Error requesting paper details: %s\n", out->get_out_u.reason);
         clnt_destroy(client);
         exit(EXIT_FAILURE);
@@ -169,7 +169,7 @@ void fetch (char *hostname, char *number) {
         exit(EXIT_FAILURE);
     }
 
-    if (out->error) {
+    if (out->result == STATUS_FAILURE) {
         fprintf(stderr, "Error requesting paper details: %s\n", out->get_out_u.reason);
         clnt_destroy(client);
         exit(EXIT_FAILURE);
