@@ -7,6 +7,52 @@
   we willen houden. We kunnen better echt alles malloc()en zodat echt het complete
   procedure resultaat ge-xdr_free()d kan worden.
 
+hotel socket protocol:
+
+a request is a sequence of ASCII characters (it is a plaintext protocol) like this:
+
+  request := procedure newline parameters newline
+
+  procedure := 'list' | 'book' | 'guests'
+
+  parameters := empty | ( type newline )? guest newline
+
+  type := a valid string without newline or space
+
+  guest := a valid string without newline
+
+  newline := '\n'
+
+a response is a sequences of ASCII characters like this:
+
+  respone := status space description newline result newline
+
+  status := '0' | '1' | '2'
+
+  space := ' '
+
+  description := a valid string witout newline
+
+  result := ( guest newline )* | ( availability newline )*
+
+  guest := a valid string without newline
+
+  availability := type space price space number
+
+  type := a valid string without newline or space
+
+  price := two numbers encoded as ascii strings separated by ','
+
+  number := a number encoded as ascii string
+
+where the meaning of stats is:
+
+  0 - No error, everything is ok
+  1 - Application error (see result for string description)
+  2 - Protocol error (usually malformed request)
+
+
+
 http://www.faqs.org/rfcs/rfc1832.html
 http://ou800doc.caldera.com/en/SDK_netapi/rpcpC.rpcgen_xdr.html
 http://www.google.com/codesearch?hl=en&q=show:1eBUjoaX3QE:FBt1YwFMXys:xwSiN5E0tBY&sa=N&ct=rd&cs_p=http://www-static.cc.gatech.edu/classes/AY2003/cs4210_summer/rpc-example.tar&cs_f=rpc-example/server.c
