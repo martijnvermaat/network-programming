@@ -9,11 +9,13 @@ import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.io.IOException;
 
 
 public class HotelGateway {
-
 
     private int STATUS_OK = 0;
     private int STATUS_APPLICATION_ERROR = 1;
@@ -22,9 +24,7 @@ public class HotelGateway {
     private int PORT = 3242;  // listen socket
     private String HOSTNAME = "localhost";  // RMI server
 
-
     private Hotel hotel;
-
 
     public HotelGateway() {
 
@@ -172,12 +172,76 @@ public class HotelGateway {
 
 
     private void handleListRequest(DataOutputStream response) throws IOException {
-        sendResponse(response, STATUS_OK, "Ok");
+        Set<Availability> availables = null;
+        
+        try {
+
+            Hotel hotel = (Hotel) Naming.lookup("rmi://" + HOSTNAME + "/HotelService");
+            availables = hotel.availableRooms();
+
+        } catch (MalformedURLException e) {
+            sendResponse(response, STATUS_APPLICATION_ERROR, "Invalid host: " + HOSTNAME);
+            return;
+        } catch (NotBoundException e) {
+            sendResponse(response, STATUS_APPLICATION_ERROR, "Hotel service not found");
+            return;
+        } catch (RemoteException e) {
+            sendResponse(response, STATUS_APPLICATION_ERROR, "Error contacting hotel service : " + e.getMessage().replaceAll("\n", "; "));
+            return;
+        }
+        
+        
+        if (availables == null || availables.isEmpty()) {
+            sendResponse(response, STATUS_OK, "None");
+        } else {
+            
+            SortedSet<Availability> sorted_availables = new TreeSet<Availability>(availables);
+            List<String> responseList = new ArrayList<String>();
+
+            for (Availability a : sorted_availables) {
+                responseList.add(Integer.toString(a.getType())
+                                 + " "
+                                 + Float.toString(a.getPrice())
+                                 + " " 
+                                 + Integer.toString(a.getNumberOfRooms()));
+            }
+            sendResponse(response, STATUS_OK, "Ok", responseList);
+        }
     }
 
 
     private void handleGuestsRequest(DataOutputStream response) throws IOException {
-        sendResponse(response, STATUS_OK, "Ok");
+        Set<String> registeredGuests = null;
+        
+        try {
+
+            Hotel hotel = (Hotel) Naming.lookup("rmi://" + HOSTNAME + "/HotelService");
+            registeredGuests = hotel.registeredGuests();
+
+        } catch (MalformedURLException e) {
+            sendResponse(response, STATUS_APPLICATION_ERROR, "Invalid host: " + HOSTNAME);
+            return;
+        } catch (NotBoundException e) {
+            sendResponse(response, STATUS_APPLICATION_ERROR, "Hotel service not found");
+            return;
+        } catch (RemoteException e) {
+            sendResponse(response, STATUS_APPLICATION_ERROR, "Error contacting hotel service : " + e.getMessage().replaceAll("\n", "; "));
+            return;
+        }
+        
+        
+        if (registeredGuests == null || registeredGuests.isEmpty()) {
+            sendResponse(response, STATUS_OK, "None");
+        } else {
+            
+            SortedSet<String> sorted_registeredGuests = new TreeSet<String>(registeredGuests);
+            List<String> responseList = new ArrayList<String>();
+
+            for (String s : sorted_registeredGuests) {
+                responseList.add(s);
+            }
+            sendResponse(response, STATUS_OK, "Ok", responseList);
+        }
     }
 
 

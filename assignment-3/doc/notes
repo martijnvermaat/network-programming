@@ -31,13 +31,13 @@ a response is a sequences of ASCII characters like this:
 
   space := ' '
 
-  description := a valid string witout newline
+  description := a valid string without newline
 
   result := ( guest newline )* | ( availability newline )*
 
   guest := a valid string without newline
 
-  availability := type space price space number
+  availability := empty | type space price space number
 
   type := a valid string without newline or space
 
