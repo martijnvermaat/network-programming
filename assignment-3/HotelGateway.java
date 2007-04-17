@@ -35,11 +35,15 @@ public class HotelGateway {
         DataOutputStream out;
 
         try { // TODO: if a client disconnects, we shouldn't crash the entire gateway
-
             serverSocket = new ServerSocket(PORT);
+        } catch (IOException e) {
+            System.err.println("Socket error");
+            System.exit(1);
+        }
 
-            while (true) {
+        while (true) {
 
+            try {
                 socket = serverSocket.accept();
 
                 in = new BufferedReader(new InputStreamReader(socket.getInputStream()));
@@ -52,11 +56,10 @@ public class HotelGateway {
                 out.close();
                 socket.close();
 
+            } catch (IOException e) {
+                System.err.println("Socket error");
             }
 
-        } catch (IOException e) {
-            System.err.println("Socket error");
-            System.exit(1);
         }
 
     }
