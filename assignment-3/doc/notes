@@ -6,6 +6,7 @@
   vorige call te free()en. Helaas zit daar op dit moment data in uit de lijst die
   we willen houden. We kunnen better echt alles malloc()en zodat echt het complete
   procedure resultaat ge-xdr_free()d kan worden.
+* rmic niet meer nodig in java 5
 
 hotel socket protocol:
 
@@ -37,13 +38,13 @@ a response is a sequences of ASCII characters like this:
 
   guest := a valid string without newline
 
-  availability := empty | type space price space number
+  availability := type space price space number
 
   type := a valid string without newline or space
 
-  price := two numbers encoded as ascii strings separated by ','
+  price := float with precision 2 encoded as ascii string
 
-  number := a number encoded as ascii string
+  number := an long integer encoded as ascii string
 
 where the meaning of stats is:
 

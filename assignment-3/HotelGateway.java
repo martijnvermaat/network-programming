@@ -34,7 +34,7 @@ public class HotelGateway {
         BufferedReader in;
         DataOutputStream out;
 
-        try {
+        try { // TODO: if a client disconnects, we shouldn't crash the entire gateway
 
             serverSocket = new ServerSocket(PORT);
 
@@ -55,7 +55,7 @@ public class HotelGateway {
             }
 
         } catch (IOException e) {
-            System.err.println("Cannot create server socket");
+            System.err.println("Socket error");
             System.exit(1);
         }
 
@@ -173,7 +173,7 @@ public class HotelGateway {
 
     private void handleListRequest(DataOutputStream response) throws IOException {
         Set<Availability> availables = null;
-        
+
         try {
 
             Hotel hotel = (Hotel) Naming.lookup("rmi://" + HOSTNAME + "/HotelService");
@@ -194,19 +194,20 @@ public class HotelGateway {
         if (availables == null || availables.isEmpty()) {
             sendResponse(response, STATUS_OK, "None");
         } else {
-            
+
             SortedSet<Availability> sorted_availables = new TreeSet<Availability>(availables);
             List<String> responseList = new ArrayList<String>();
 
             for (Availability a : sorted_availables) {
                 responseList.add(Integer.toString(a.getType())
                                  + " "
-                                 + Float.toString(a.getPrice())
-                                 + " " 
+                                 + String.format("%.2f", a.getPrice()) // TODO make sure we always use a dot (.) as separator
+                                 + " "
                                  + Integer.toString(a.getNumberOfRooms()));
             }
             sendResponse(response, STATUS_OK, "Ok", responseList);
         }
+
     }
 
 
@@ -233,7 +234,7 @@ public class HotelGateway {
         if (registeredGuests == null || registeredGuests.isEmpty()) {
             sendResponse(response, STATUS_OK, "None");
         } else {
-            
+
             SortedSet<String> sorted_registeredGuests = new TreeSet<String>(registeredGuests);
             List<String> responseList = new ArrayList<String>();
 
@@ -247,11 +248,11 @@ public class HotelGateway {
 
     private void sendResponse(DataOutputStream response, int status, String description, List<String> data) throws IOException {
 
-        response.writeChars(Integer.toString(status) + " " + description);
+        response.writeBytes(Integer.toString(status) + " " + description);
         response.writeByte('\n');
 
         for (String s : data) {
-            response.writeChars(s);
+            response.writeBytes(s);
             response.writeByte('\n');
         }
 
