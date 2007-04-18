@@ -184,8 +184,6 @@ void list (char *hostname) {
 
     write_line(server_socket, request);
 
-    // todo network to host conversion?
-
     line = read_line(server_socket);
 
     if (!line) {
@@ -236,8 +234,6 @@ void book (char *hostname, char *type, char *guest) {
 
     write_line(server_socket, request);
 
-    // todo network to host conversion?
-
     line = read_line(server_socket);
 
     if (!line) {
@@ -285,8 +281,6 @@ void book_any (char *hostname, char *guest) {
 
     write_line(server_socket, request);
 
-    // todo network to host conversion?
-
     line = read_line(server_socket);
 
     if (!line) {
@@ -331,8 +325,6 @@ void guests (char *hostname) {
     server_socket = connect_to_gateway(hostname);
 
     write_line(server_socket, request);
-
-    // todo network to host conversion?
 
     line = read_line(server_socket);
 

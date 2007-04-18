@@ -22,8 +22,8 @@ public class HotelGateway {
     private int STATUS_APPLICATION_ERROR = 1;
     private int STATUS_PROTOCOL_ERROR = 2;
 
-    private int PORT = 3242;  // listen socket
-    private String HOSTNAME = "localhost";  // RMI server
+    private int PORT = 3242;                // Socket to listen on
+    private String HOSTNAME = "localhost";  // RMI server to connect to
 
     private Hotel hotel;
 
@@ -36,7 +36,7 @@ public class HotelGateway {
         BufferedReader in;
         DataOutputStream out;
 
-        try { // TODO: if a client disconnects, we shouldn't crash the entire gateway
+        try {
             serverSocket = new ServerSocket(PORT);
         } catch (IOException e) {
             System.err.println("Socket error");
@@ -44,6 +44,8 @@ public class HotelGateway {
         }
 
         while (true) {
+
+            // TODO: threading?
 
             try {
                 socket = serverSocket.accept();
@@ -53,7 +55,6 @@ public class HotelGateway {
 
                 handleRequest(in, out);
 
-                // TODO: socket sluiten
                 in.close();
                 out.close();
                 socket.close();
@@ -218,7 +219,7 @@ public class HotelGateway {
             for (Availability a : sorted_availables) {
                 responseList.add(Integer.toString(a.getType())
                                  + " "
-                                 + String.format("%.2f", a.getPrice()) // TODO make sure we always use a dot (.) as separator
+                                 + String.format("%.2f", a.getPrice()) // TODO make sure we always use a dot (.) as separator (USE .toString)
                                  + " "
                                  + Integer.toString(a.getNumberOfRooms()));
             }

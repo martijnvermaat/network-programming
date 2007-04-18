@@ -7,6 +7,8 @@
   we willen houden. We kunnen better echt alles malloc()en zodat echt het complete
   procedure resultaat ge-xdr_free()d kan worden.
 * rmic niet meer nodig in java 5
+* no need to do network to host conversion (we only send bytes)
+
 
 hotel socket protocol:
 
