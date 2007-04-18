@@ -31,7 +31,7 @@ class SimpleHotel extends UnicastRemoteObject implements Hotel {
         }
 
         if (!booked) {
-            throw new NotAvailableException();
+            throw new NotAvailableException("No room available of type " + roomType);
         }
 
     }
@@ -57,7 +57,7 @@ class SimpleHotel extends UnicastRemoteObject implements Hotel {
         }
 
         if (!booked) {
-            throw new NotAvailableException();
+            throw new NotAvailableException("No room available");
         }
 
     }

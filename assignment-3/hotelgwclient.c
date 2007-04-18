@@ -16,6 +16,7 @@
 #define LIST_REQUEST "list\n\n"
 #define GUESTS_REQUEST "guests\n\n"
 #define BOOK_REQUEST "book\n%s\n%s\n\n"
+#define BOOK_ANY_REQUEST "book\n%s\n\n"
 
 
 void usage_error () {
@@ -129,7 +130,7 @@ void print_availability (char *availability) {
         fprintf(stderr, "Cannot read response");
     }
 
-    printf("%d rooms of type %s at %.2f euros per night\n", number, type, price);
+    printf("%3d room(s) of type %s at %.2f euros per night\n", number, type, price);
 
 }
 
@@ -193,7 +194,11 @@ void list (char *hostname) {
     }
 
     if (*line != '0') {
-        fprintf(stderr, "Error response: %s\n", line + 2); // todo check if +2 exists
+        if (*line == '1') {
+            fprintf(stderr, "%s\n", line + 2);
+        } else {
+            fprintf(stderr, "Error response: %s\n", line + 2); // todo check if +2 exists
+        }
         exit(EXIT_FAILURE);
     }
 
@@ -222,7 +227,7 @@ void list (char *hostname) {
 void book (char *hostname, char *type, char *guest) {
 
     int server_socket;
-    char *request = malloc(strlen(BOOK_REQUEST) + strlen(type) + strlen(guest) + 1);
+    char *request = malloc(strlen(BOOK_REQUEST) + strlen(type) + strlen(guest) + 1); // Sloppy, but ok
     char *line;
 
     snprintf(request, strlen(BOOK_REQUEST) + strlen(type) + strlen(guest) + 1, BOOK_REQUEST, type, guest);
@@ -241,7 +246,60 @@ void book (char *hostname, char *type, char *guest) {
     }
 
     if (*line != '0') {
-        fprintf(stderr, "Error response: %s\n", line + 2); // todo check if +2 exists
+        if (*line == '1') {
+            fprintf(stderr, "%s\n", line + 2);
+        } else {
+            fprintf(stderr, "Error response: %s\n", line + 2); // todo check if +2 exists
+        }
+        exit(EXIT_FAILURE);
+    }
+
+    free(line);
+
+    line = read_line(server_socket);
+
+    if (strlen(line) != 0) {
+        fprintf(stderr, "Cannot read response\n");
+        exit(EXIT_FAILURE);
+    }
+
+    free(line);
+
+    if (close(server_socket) == -1) {
+        perror("Error closing connection");
+        exit(EXIT_FAILURE);
+    }
+
+}
+
+
+void book_any (char *hostname, char *guest) {
+
+    int server_socket;
+    char *request = malloc(strlen(BOOK_ANY_REQUEST) + strlen(guest) + 1);  // Sloppy, but ok
+    char *line;
+
+    snprintf(request, strlen(BOOK_ANY_REQUEST) + strlen(guest) + 1, BOOK_ANY_REQUEST, guest);
+
+    server_socket = connect_to_gateway(hostname);
+
+    write_line(server_socket, request);
+
+    // todo network to host conversion?
+
+    line = read_line(server_socket);
+
+    if (!line) {
+        fprintf(stderr, "Cannot read response\n");
+        exit(EXIT_FAILURE);
+    }
+
+    if (*line != '0') {
+        if (*line == '1') {
+            fprintf(stderr, "%s\n", line + 2);
+        } else {
+            fprintf(stderr, "Error response: %s\n", line + 2); // todo check if +2 exists
+        }
         exit(EXIT_FAILURE);
     }
 
@@ -284,7 +342,11 @@ void guests (char *hostname) {
     }
 
     if (*line != '0') {
-        fprintf(stderr, "Error response: %s\n", line + 2); // todo check if +2 exists
+        if (*line == '1') {
+            fprintf(stderr, "%s\n", line + 2);
+        } else {
+            fprintf(stderr, "Error response: %s\n", line + 2); // todo check if +2 exists
+        }
         // TODO: read empty line
         exit(EXIT_FAILURE);
     }
@@ -334,7 +396,7 @@ int main (int argc, char **argv) {
         if (argc > 4) {
             book(argv[2], argv[3], argv[4]);
         } else {
-            //book_any(argv[2], argv[3]); // TODO book_any
+            book_any(argv[2], argv[3]);
         }
 
     } else if (!strcmp(argv[1], "guests")) {

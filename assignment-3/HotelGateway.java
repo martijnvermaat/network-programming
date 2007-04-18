@@ -17,6 +17,7 @@ import java.io.IOException;
 
 public class HotelGateway {
 
+
     private int STATUS_OK = 0;
     private int STATUS_APPLICATION_ERROR = 1;
     private int STATUS_PROTOCOL_ERROR = 2;
@@ -25,6 +26,7 @@ public class HotelGateway {
     private String HOSTNAME = "localhost";  // RMI server
 
     private Hotel hotel;
+
 
     public HotelGateway() {
 
@@ -126,7 +128,7 @@ public class HotelGateway {
             try {
                 hotel.bookRoom(type, guest);
             } catch (NotAvailableException e) {
-                sendResponse(response, STATUS_APPLICATION_ERROR, "Unfortunately we're full");
+                sendResponse(response, STATUS_APPLICATION_ERROR, e.getMessage().replaceAll("\n", " "));
                 return;
             }
 
@@ -137,7 +139,11 @@ public class HotelGateway {
             sendResponse(response, STATUS_APPLICATION_ERROR, "Hotel service not found");
             return;
         } catch (RemoteException e) {
-            sendResponse(response, STATUS_APPLICATION_ERROR, "Error contacting hotel service : " + e.getMessage().replaceAll("\n", "; "));
+            Throwable cause = e.getCause();
+            if (cause == null) {
+                cause = e;
+            }
+            sendResponse(response, STATUS_APPLICATION_ERROR, "Error contacting hotel service: " + cause.getMessage().replaceAll("\n", " "));
             return;
         }
 
@@ -154,7 +160,7 @@ public class HotelGateway {
             try {
                 hotel.bookRoom(guest);
             } catch (NotAvailableException e) {
-                sendResponse(response, STATUS_APPLICATION_ERROR, "Unfortunately we're full");
+                sendResponse(response, STATUS_APPLICATION_ERROR, e.getMessage().replaceAll("\n", " "));
                 return;
             }
 
@@ -165,7 +171,11 @@ public class HotelGateway {
             sendResponse(response, STATUS_APPLICATION_ERROR, "Hotel service not found");
             return;
         } catch (RemoteException e) {
-            sendResponse(response, STATUS_APPLICATION_ERROR, "Error contacting hotel service : " + e.getMessage().replaceAll("\n", "; "));
+            Throwable cause = e.getCause();
+            if (cause == null) {
+                cause = e;
+            }
+            sendResponse(response, STATUS_APPLICATION_ERROR, "Error contacting hotel service : " + cause.getMessage().replaceAll("\n", " "));
             return;
         }
 
@@ -189,7 +199,11 @@ public class HotelGateway {
             sendResponse(response, STATUS_APPLICATION_ERROR, "Hotel service not found");
             return;
         } catch (RemoteException e) {
-            sendResponse(response, STATUS_APPLICATION_ERROR, "Error contacting hotel service : " + e.getMessage().replaceAll("\n", "; "));
+            Throwable cause = e.getCause();
+            if (cause == null) {
+                cause = e;
+            }
+            sendResponse(response, STATUS_APPLICATION_ERROR, "Error contacting hotel service : " + cause.getMessage().replaceAll("\n", " "));
             return;
         }
         
@@ -229,7 +243,11 @@ public class HotelGateway {
             sendResponse(response, STATUS_APPLICATION_ERROR, "Hotel service not found");
             return;
         } catch (RemoteException e) {
-            sendResponse(response, STATUS_APPLICATION_ERROR, "Error contacting hotel service : " + e.getMessage().replaceAll("\n", "; "));
+            Throwable cause = e.getCause();
+            if (cause == null) {
+                cause = e;
+            }
+            sendResponse(response, STATUS_APPLICATION_ERROR, "Error contacting hotel service : " + cause.getMessage().replaceAll("\n", " "));
             return;
         }
         

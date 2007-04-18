@@ -78,7 +78,7 @@ public class HotelClient {
             SortedSet<Availability> sorted_availables = new TreeSet<Availability>(availables);
 
             for (Availability a : sorted_availables) {
-                System.out.printf("  %3d rooms of type %3d at %.2f euros per night\n",a.getNumberOfRooms(), a.getType(), a.getPrice());
+                System.out.printf("  %3d room(s) of type %3d at %.2f euros per night\n",a.getNumberOfRooms(), a.getType(), a.getPrice());
             }
 
         }
