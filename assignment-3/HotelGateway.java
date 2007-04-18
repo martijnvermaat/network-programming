@@ -34,7 +34,7 @@ public class HotelGateway {
         try {
             serverSocket = new ServerSocket(PORT);
         } catch (IOException e) {
-            System.err.println("Socket error");
+            System.err.println("Socket error: " + e.getMessage());
             System.exit(1);
         }
 

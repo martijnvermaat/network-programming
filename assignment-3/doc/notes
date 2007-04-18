@@ -8,6 +8,11 @@
   procedure resultaat ge-xdr_free()d kan worden.
 * rmic niet meer nodig in java 5
 * no need to do network to host conversion (we only send bytes)
+* we only support ascii values (in fact, unicode input works fine for hotelserver
+  and hotelclient, but we don't support anything else than ascii over the socket
+  interface, this means input is silently treated as ascii)
+* by the way, with my jython hotelgw.py unicode works trivially... (yes, even in
+  combi with the C hotelgwclient.c, at least if your terminal recognizes unicode) :P
 
 
 hotel socket protocol:
