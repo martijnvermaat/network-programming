@@ -10,7 +10,7 @@
 
 void usage_error () {
     printf("Usage: paperclient add <hostname> <author> <title> <filename.{pdf|doc}>\n");
-    printf("       paperclient details <hostname> <number>\n");
+    printf("       paperclient details <hostname> <number>\n"); // TODO details->detail
     printf("       paperclient fetch <hostname> <number>\n");
     printf("       paperclient list <hostname>\n");
     exit(EXIT_FAILURE);
