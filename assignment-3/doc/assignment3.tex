@@ -69,5 +69,70 @@ Our solution is to make a plaintext protocol with ascii character encoding, base
 The hotelserver obviously runs at the hotel it is serving for. Also the gateway belongs there, since it only serves as a generic means to connect to the hotelserver. The hotelclient belongs to the client that wants to book a room.
 
 \section{Program documentation}
+\subsection{A Paper Storage Server}
+For the paper storage server we have written 2 programs:
+\begin{center}
+% use packages: array
+\begin{tabular}{ l | p{9cm} }
+paperclient.c & a program that connects to the paper server to store papers and retrieve paper info\\ \hline
+paperserver.c & an interative server that accepts papers and provides information about the papers\\
+\end{tabular}
+\end{center}
+
+In the specification file paperstorage.x are our procedures and data types defined.
+
+\paragraph{paperclient.c}
+The program starts by typing ./paperclient followed by a number of parameters. How to use the program is printed by omitting the parameters. When the program starts it parses the parameters and executes the corresponding routine, otherwise it will print an error message.
+
+The add, detail, fetch, and list routines roughly work as follows. A client structure is created, parameters are set, remote procedure is called, and results are printed on standard output.
+
+\paragraph{paperserver.c}
+The program starts by typing ./paperserver. When the program starts it waits for incoming connections (not actually part of the paperserver object file), and handles the requests.
+
+The detail and fetch routines of the client are handled by the same procedure on the server. The only difference is whether they use the \emph{sparse} or \emph{detailed} flag.
+
+\paragraph{paperstorage.x}
+As mentioned earlier it is possible to use different techniques to transfer variably sized data. Where it is possible to use an array with maximum size, we used a linked list.
+
+When a procedure fails, we wanted to send back information telling why something went wrong. Instead of incorporating every bit of data in a structure, we used the more efficient unions.
+
+\subsection{A Hotel Reservation Server}
+For the hotel reservation server we have written 9 classes:
+\begin{center}
+% use packages: array
+\begin{tabular}{ l | p{7.0cm} }
+Availability.java & structure holding price and the number of still available rooms for a specific room type\\ \hline
+HotelClient.java & client program that connects to the hotel reservation server to book rooms and retrieve information\\ \hline
+Hotel.java & interface for the hotel service running at the hotel reservation server\\ \hline
+HotelServer.java & the Hotel Reservation Server\\ \hline
+NotAvailableException.java & exception that occurs when a wanted room is not available\\ \hline
+NotBookedException.java & exception handling an internal error\\ \hline
+Room.java & a specific room that hold guest information when it is booked\\ \hline
+RoomType.java & structure that holds data about the specific types of rooms\\ \hline
+SimpleHotel.java & implementation of the hotel service\\
+\end{tabular}
+\end{center}
+
+\paragraph{Availability.java}
+This class is used in a Set to send information about which types of rooms still have rooms left, and at which price.
+
+\paragraph{HotelClient.java}
+The program starts by typing ./hotelclient (which is a shell script wrapper around the actual Java program) followed by a number of parameters. How to use the program is printed by omitting the parameters.
+
+We have designed HotelClient such that it can run on its own, but also that it can be incorporated in a larger software package that needs the book, details, and list functions. For example, to make a graphical wrapper around it.
+
+\paragraph{Hotel.java}
+This is the interface for the hotel service running at the hotel reservation server. This interface is needed because it is obligatory to extend the java.rmi.Remote interface.
+ 
+\paragraph{HotelServer.java}
+The program starts by typing ./hotelserver (which is a shell script wrapper around the actual Java program). Before starting the server the \texttt{rmiregistry} should already be running. However, it is also possible to start your own registry using the \texttt{java.rmi.registry.LocateRegistry} and \texttt{java.rmi.registry.Registry} classes.
+
+The internal workings are pretty simple. The registry is started, a SimpleHotel (implementation of the Hotel interface) is instantiated and bound in the registry. The registry takes care of the rest. 
+
+\paragraph{NotAvailableException.java}
+\paragraph{NotBookedException.java}
+\paragraph{Room.java}
+\paragraph{RoomType.java}
+\paragraph{SimpleHotel.java}
 
 \end{document}
