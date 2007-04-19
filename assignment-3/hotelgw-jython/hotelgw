@@ -1,0 +1,11 @@
+#!/bin/sh
+
+# Make sure we can find the following classes in CLASSPATH:
+#   Hotel
+#   Availability
+#   NotAvailableException
+#   NotBookedException
+#   SimpleHotel_Stub
+
+CLASSPATH=$CLASSPATH:../
+jython hotelgw.py ${*}
