@@ -1,0 +1,73 @@
+\documentclass[a4paper,10pt]{article}
+
+
+% Title Page
+\title{Network Programming\\
+\small{Assignment 3: Client-Server programming}}
+\author{%
+        \mbox{}\\
+        Thomas Veerman\\
+        \texttt{tveerman@cs.vu.nl}\\
+        1329545\\
+        \mbox{}\\
+        Martijn Vermaat\\
+        \texttt{mvermaat@cs.vu.nl}\\
+        1362917
+}
+
+
+\begin{document}
+\maketitle
+
+\section{A Paper Storage Server}
+\paragraph{Question 1}
+It is possible to send any number of paper detail structures by using a list:
+
+\begin{tabbing}
+\hspace{20pt}\=\kill
+ \>\texttt{typedef document document\_list<>;}
+\end{tabbing}
+
+However, by omitting the size of the array Sun RPC actually reads that as $2^{32} - 1$, so in fact it is limited. We have chosen to make a linked list:
+
+\begin{tabbing}
+\hspace{20pt}\=\kill
+ \> \texttt{type}\=\texttt{def} \texttt{struct document\_node *document\_list;}\\ 
+ \> \texttt{struct document\_node }\{ \+ \\
+ \> \texttt{document item;}\\ 
+ \> \texttt{document\_list next;} \- \\
+ \> \} 
+\end{tabbing}
+
+\paragraph{Question 2}
+Normally you define a variable with a fixed size, but than can prove to be troublesome when you have to deal with variable sized data. That is, you will have to cut data up in several chunks when its size is larger than your fixed size variable. This is difficult to get right with Sun RPC. Our solution to this problem was to define an array where we omitted the size, thus defining it as an array of $2^{32} - 1$ bytes (or just under 4 GiB).
+
+\begin{tabbing}
+\hspace{20pt}\=\kill
+ \>\texttt{typedef opaque data <>;}
+\end{tabbing}
+
+This seems to be large enough for transmitting papers.
+
+
+\section{A Hotel Reservation Server}
+\paragraph{Question 3}
+Ik weet niet zo goed wat ik hier moet antwoorden. De parameters die we hebben worden of direct overgestuurd (int), of eerst geserialized en dan overgestuurd (String). De Strings zijn dus referenties, maar dat kan nou eenmaal niet anders. Maar, ze worden altijd by value overgestuurd. De Sets die we terugsturen zijn ook referenties, maar worden ook geserialized.
+
+Wat wil hij nou van ons horen?
+
+\section{Hotel Reservation Gateway}
+\paragraph{Question 4}
+We have used one thread per child as server structure. Though it is unlikely that we will be sending big quantities of data, it can occur that a client is on a very bad connection with high latency and low throughput, which will slow down the server. Also, as we found out first hand, clients that do not follow the protocol may keep the connection open so that other clients cannot connect. By spawning a thread for each incoming connection, this will not be a problem anymore. Of course the server (not the gateway) must support concurrent connections. To be able to do that we made the booking method synchronized, since that is the only method that might cause problems when multiple clients want to book the last room (of a specific type). The other methods only read data, which will never be a problem.
+
+\paragraph{Question 5}
+To design a protocol that is suitable for multiple platforms and languages, you need to make sure to keep the differences between platforms and languages in mind. For example, where one platform considers an int as a 16-bit value, others consider it a 32-bit value. In your protocol you have to standardize these differences.
+
+Our solution is to make a plaintext protocol with ascii character encoding, based on HTTP. This is easy to debug, and virtually every platform knows how to interpret ascii character encoding. Almost all data are strings, except for the price of a room, which is a float. We used the standard ascii encoding for a float with precision two (that is, a number followed by a full stop character followed by a number in the range of 00 to 99). (For a detailed description of our protocol, see the program documentation for the hotel gateway.)
+
+\paragraph{Question 6}
+The hotelserver obviously runs at the hotel it is serving for. Also the gateway belongs there, since it only serves as a generic means to connect to the hotelserver. The hotelclient belongs to the client that wants to book a room.
+
+\section{Program documentation}
+
+\end{document}

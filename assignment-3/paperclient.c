@@ -10,7 +10,7 @@
 
 void usage_error () {
     printf("Usage: paperclient add <hostname> <author> <title> <filename.{pdf|doc}>\n");
-    printf("       paperclient details <hostname> <number>\n"); // TODO details->detail
+    printf("       paperclient detail <hostname> <number>\n");
     printf("       paperclient fetch <hostname> <number>\n");
     printf("       paperclient list <hostname>\n");
     exit(EXIT_FAILURE);
@@ -104,7 +104,7 @@ void add (char *hostname, char *author, char *title, char *filename) {
 }
 
 
-void details (char *hostname, char *number) {
+void detail (char *hostname, char *number) {
 
     CLIENT *client;
     get_in in;
@@ -244,13 +244,13 @@ int main (int argc, char **argv) {
 
         add(argv[2], argv[3], argv[4], argv[5]);
 
-    } else if (!strcmp(argv[1], "details")) {
+    } else if (!strcmp(argv[1], "detail")) {
 
         if (argc < 4) {
             usage_error();
         }
 
-        details(argv[2], argv[3]);
+        detail(argv[2], argv[3]);
 
     } else if (!strcmp(argv[1], "fetch")) {
 
