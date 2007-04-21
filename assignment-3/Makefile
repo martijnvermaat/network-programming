@@ -5,7 +5,7 @@ JAVAC = javac
 RMIC = rmic
 
 
-all: paperserver paperclient hotelserver hotelclient hotelgateway hotelgwclient
+all: paperserver paperclient hotelserver hotelclient hotelgw hotelgwclient
 
 
 paperserver: paperserver.o paperstorage_xdr.o paperstorage_svc.o
@@ -37,7 +37,7 @@ hotelserver: HotelServer.class
 
 hotelclient: HotelClient.class
 
-hotelgateway: HotelGateway.class
+hotelgw: HotelGateway.class
 
 HotelServer.class: HotelServer.java SimpleHotel_Stub.class Hotel.java SimpleHotel.java
 	$(JAVAC) HotelServer.java

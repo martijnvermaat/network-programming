@@ -13,6 +13,7 @@
   interface, this means input is silently treated as ascii)
 * by the way, with my jython hotelgw.py unicode works trivially... (yes, even in
   combi with the C hotelgwclient.c, at least if your terminal recognizes unicode) :P
+* Float.toString() geeft een goede ASCII representatie zoals wij willen
 
 
 hotel socket protocol:

@@ -127,7 +127,8 @@ void print_availability (char *availability) {
     int number;
 
     if (sscanf(availability, AVAILABILITY_FORMAT, type, &price, &number) != 3) {
-        fprintf(stderr, "Cannot read response");
+        fprintf(stderr, "Cannot read response\n");
+        exit(EXIT_FAILURE);
     }
 
     printf("%3d room(s) of type %s at %.2f euros per night\n", number, type, price);

@@ -280,7 +280,11 @@ def main():
         # By the way, we use a file object to read and write to the socket
         # in an easy way.
         client, _ = s.accept()
-        handle_request(client.makefile("rw"))
+        try:
+            handle_request(client.makefile("rw"))
+        except IOError:
+            # What can we do? Do our best for the next customer...
+            pass
 
 
 if __name__ == "__main__":

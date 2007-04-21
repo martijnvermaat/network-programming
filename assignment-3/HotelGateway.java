@@ -221,7 +221,7 @@ public class HotelGateway {
                 for (Availability a : sorted_availables) {
                     responseList.add(Integer.toString(a.getType())
                                      + " "
-                                     + String.format("%.2f", a.getPrice()) // TODO make sure we always use a dot (.) as separator (USE .toString)
+                                     + Float.toString(a.getPrice())
                                      + " "
                                      + Integer.toString(a.getNumberOfRooms()));
                 }
