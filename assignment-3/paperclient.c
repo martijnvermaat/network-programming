@@ -8,8 +8,9 @@
 #include <rpc/rpc.h>
 
 
-void usage_error () {
-    printf("Usage: paperclient add <hostname> <author> <title> <filename.{pdf|doc}>\n");
+void usage_error() {
+    printf("Usage: paperclient add <hostname> <author> <title>");
+    printf(" <filename.{pdf|doc}>\n");
     printf("       paperclient detail <hostname> <number>\n");
     printf("       paperclient fetch <hostname> <number>\n");
     printf("       paperclient list <hostname>\n");
@@ -19,10 +20,10 @@ void usage_error () {
 
 /*
   TODO: We could add a check for the filename extension (.pdf/.doc).
-  TODO: Check XDR structures for NULL pointers, we should not trust rpcgen too
-  much.
+  TODO: Check XDR structures for NULL pointers, we should not trust rpcgen and
+        the server too much.
 */
-void add (char *hostname, char *author, char *title, char *filename) {
+void add(char *hostname, char *author, char *title, char *filename) {
 
     CLIENT *client;
     add_in in;
@@ -31,12 +32,14 @@ void add (char *hostname, char *author, char *title, char *filename) {
     struct stat file_stat;
 
     if (strlen(author) > MAX_AUTHOR_LENGTH) {
-        fprintf(stderr, "Maximum length for author is %d\n", MAX_AUTHOR_LENGTH);
+        fprintf(stderr, "Maximum length for author is %d\n",
+                MAX_AUTHOR_LENGTH);
         exit(EXIT_FAILURE);
     }
 
     if (strlen(title) > MAX_TITLE_LENGTH) {
-        fprintf(stderr, "Maximum length for title is %d\n", MAX_TITLE_LENGTH);
+        fprintf(stderr, "Maximum length for title is %d\n",
+                MAX_TITLE_LENGTH);
         exit(EXIT_FAILURE);
     }
 
@@ -66,7 +69,8 @@ void add (char *hostname, char *author, char *title, char *filename) {
         exit(EXIT_FAILURE);
     }
 
-    if (fread(in.paper.content->data_val, file_stat.st_size, 1, stream) != 1) {
+    if (fread(in.paper.content->data_val, file_stat.st_size, 1, stream)
+        != 1) {
 
         if (feof(stream)) {
             fprintf(stderr, "File is unstable: %s\n", filename);
@@ -80,7 +84,8 @@ void add (char *hostname, char *author, char *title, char *filename) {
     in.paper.author = author;
     in.paper.title = title;
 
-    client = clnt_create(hostname, PAPERSTORAGE_PROG, PAPERSTORAGE_VERS, "tcp");
+    client = clnt_create(hostname, PAPERSTORAGE_PROG, PAPERSTORAGE_VERS,
+                         "tcp");
 
     if (client == NULL) {
         fprintf(stderr, "Error connecting to %s", hostname);
@@ -111,16 +116,17 @@ void add (char *hostname, char *author, char *title, char *filename) {
 
 
 /*
-  TODO: Check XDR structures for NULL pointers, we should not trust rpcgen too
-  much.
+  TODO: Check XDR structures for NULL pointers, we should not trust rpcgen and
+        the server too much.
 */
-void detail (char *hostname, char *number) {
+void detail(char *hostname, char *number) {
 
     CLIENT *client;
     get_in in;
     get_out *out;
 
-    client = clnt_create(hostname, PAPERSTORAGE_PROG, PAPERSTORAGE_VERS, "tcp");
+    client = clnt_create(hostname, PAPERSTORAGE_PROG, PAPERSTORAGE_VERS,
+                         "tcp");
 
     if (client == NULL) {
         fprintf(stderr, "Error connecting to %s", hostname);
@@ -140,12 +146,15 @@ void detail (char *hostname, char *number) {
     }
 
     if (out->result == STATUS_FAILURE) {
-        fprintf(stderr, "Error requesting paper details: %s\n", out->get_out_u.reason);
+        fprintf(stderr, "Error requesting paper details: %s\n",
+                out->get_out_u.reason);
         clnt_destroy(client);
         exit(EXIT_FAILURE);
     }
 
-    printf("Author: ``%s''\nTitle:  ``%s''\n", out->get_out_u.paper.author, out->get_out_u.paper.title);
+    printf("Author: ``%s''\nTitle:  ``%s''\n",
+           out->get_out_u.paper.author,
+           out->get_out_u.paper.title);
 
     clnt_destroy(client);
 
@@ -153,18 +162,18 @@ void detail (char *hostname, char *number) {
 
 
 /*
-  TODO: Check XDR structures for NULL pointers, we should not trust rpcgen too
-  much.
+  TODO: Check XDR structures for NULL pointers, we should not trust rpcgen and
+        the server too much.
+  TODO: Reuse more code of all methods (or just of fetch/details)
 */
-void fetch (char *hostname, char *number) {
-
-    // TODO: merge more code of all methods (or just of fetch/details)
+void fetch(char *hostname, char *number) {
 
     CLIENT *client;
     get_in in;
     get_out *out;
 
-    client = clnt_create(hostname, PAPERSTORAGE_PROG, PAPERSTORAGE_VERS, "tcp");
+    client = clnt_create(hostname, PAPERSTORAGE_PROG, PAPERSTORAGE_VERS,
+                         "tcp");
 
     if (client == NULL) {
         fprintf(stderr, "Error connecting to %s", hostname);
@@ -184,12 +193,14 @@ void fetch (char *hostname, char *number) {
     }
 
     if (out->result == STATUS_FAILURE) {
-        fprintf(stderr, "Error requesting paper details: %s\n", out->get_out_u.reason);
+        fprintf(stderr, "Error requesting paper details: %s\n",
+                out->get_out_u.reason);
         clnt_destroy(client);
         exit(EXIT_FAILURE);
     }
 
-    if (fwrite(out->get_out_u.paper.content->data_val, out->get_out_u.paper.content->data_len, 1, stdout) != 1) {
+    if (fwrite(out->get_out_u.paper.content->data_val,
+               out->get_out_u.paper.content->data_len, 1, stdout) != 1) {
         perror("Error writing paper to standard output");
         clnt_destroy(client);
         exit(EXIT_FAILURE);
@@ -204,14 +215,15 @@ void fetch (char *hostname, char *number) {
   TODO: Check XDR structures for NULL pointers, we should not trust rpcgen too
   much.
 */
-void list (char *hostname) {
+void list(char *hostname) {
 
     CLIENT *client;
     list_out *out;
     document_list papers;
     int paper_count = 0;
 
-    client = clnt_create(hostname, PAPERSTORAGE_PROG, PAPERSTORAGE_VERS, "tcp");
+    client = clnt_create(hostname, PAPERSTORAGE_PROG, PAPERSTORAGE_VERS,
+                         "tcp");
 
     if (client == NULL) {
         fprintf(stderr, "Error connecting to %s", hostname);
@@ -232,7 +244,9 @@ void list (char *hostname) {
 
     while (papers) {
         paper_count++;
-        printf("Paper %d\n  Author: ``%s''\n  Title:  ``%s''\n", *(papers->item.number), papers->item.author, papers->item.title);
+        printf("Paper %d\n  Author: ``%s''\n  Title:  ``%s''\n",
+               *(papers->item.number),
+               papers->item.author, papers->item.title);
         papers = papers->next;
     }
 
@@ -247,7 +261,7 @@ void list (char *hostname) {
 }
 
 
-int main (int argc, char **argv) {
+int main(int argc, char **argv) {
 
     if (argc < 2) {
         usage_error();

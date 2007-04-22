@@ -27,8 +27,8 @@ int papers_count = 0;
 
 
 /*
-  TODO: Check XDR structures for NULL pointers, we should not trust rpcgen too
-        much.
+  TODO: Check XDR structures for NULL pointers, we should not trust rpcgen and
+        the client too much.
   TODO: Maybe check if paper exists by comparing author and title.
 */
 add_out *add_proc_1_svc(add_in *in, struct svc_req *rqstp) {
@@ -53,7 +53,8 @@ add_out *add_proc_1_svc(add_in *in, struct svc_req *rqstp) {
 
     // Resize paper buffer
     if (papers_count == papers_size) {
-        papers = realloc(papers, papers_size + (PAPER_BUFFER_SIZE * sizeof(void*)));
+        papers = realloc(papers,
+                         papers_size + (PAPER_BUFFER_SIZE * sizeof(void*)));
         if (papers == NULL) {
             // Remember to free() the original buffer if we would remove the
             // exit() call
@@ -78,16 +79,21 @@ add_out *add_proc_1_svc(add_in *in, struct svc_req *rqstp) {
     strcpy(paper->title, in->paper.title);
 
     paper->size = in->paper.content->data_len;
-    memcpy(paper->data, in->paper.content->data_val, in->paper.content->data_len);
+    memcpy(paper->data,
+           in->paper.content->data_val,
+           in->paper.content->data_len);
 
     papers[papers_count] = paper;
 
     papers_count++;
 
-    dprint("Received paper %d from ``%s'' with title ``%s''\n", papers_count, in->paper.author, in->paper.title);
+    dprint("Received paper %d from ``%s'' with title ``%s''\n",
+           papers_count, in->paper.author, in->paper.title);
 
+    // Don't return entire document
     out.add_out_u.paper.content = NULL;
 
+    // The client might be interested in the number we assigned to the paper
     out.add_out_u.paper.number = malloc(sizeof(int));
     if (out.add_out_u.paper.number == NULL) {
         perror("Unable to allocate necessary memory");
@@ -99,12 +105,14 @@ add_out *add_proc_1_svc(add_in *in, struct svc_req *rqstp) {
     // structure. Being consistent in this way, makes it easy to free the
     // entire structure with a xdr_free() call.
     // (This is the way we do it in all procedures.)
-    out.add_out_u.paper.author = malloc(strlen(papers[papers_count - 1]->author) + 1);
+    out.add_out_u.paper.author = 
+        malloc(strlen(papers[papers_count - 1]->author) + 1);
     if (out.add_out_u.paper.author == NULL) {
         perror("Unable to allocate necessary memory");
         exit(EXIT_FAILURE);
     }
-    out.add_out_u.paper.title = malloc(strlen(papers[papers_count - 1]->title) +1);
+    out.add_out_u.paper.title =
+        malloc(strlen(papers[papers_count - 1]->title) +1);
     if (out.add_out_u.paper.title == NULL) {
         perror("Unable to allocate necessary memory");
         exit(EXIT_FAILURE);
@@ -119,8 +127,8 @@ add_out *add_proc_1_svc(add_in *in, struct svc_req *rqstp) {
 
 
 /*
-  TODO: Check XDR structures for NULL pointers, we should not trust rpcgen too
-        much.
+  TODO: Check XDR structures for NULL pointers, we should not trust rpcgen and
+        the client too much.
 */
 get_out *get_proc_1_svc(get_in *in, struct svc_req *rqstp) {
 
@@ -149,12 +157,14 @@ get_out *get_proc_1_svc(get_in *in, struct svc_req *rqstp) {
     }
     *out.get_out_u.paper.number = in->number;
 
-    out.get_out_u.paper.author = malloc(strlen(papers[in->number - 1]->author) + 1);
+    out.get_out_u.paper.author =
+        malloc(strlen(papers[in->number - 1]->author) + 1);
     if (out.get_out_u.paper.author == NULL) {
         perror("Unable to allocate necessary memory");
         exit(EXIT_FAILURE);
     }
-    out.get_out_u.paper.title = malloc(strlen(papers[in->number - 1]->title) + 1);
+    out.get_out_u.paper.title =
+        malloc(strlen(papers[in->number - 1]->title) + 1);
     if (out.get_out_u.paper.title == NULL) {
         perror("Unable to allocate necessary memory");
         exit(EXIT_FAILURE);
@@ -163,18 +173,22 @@ get_out *get_proc_1_svc(get_in *in, struct svc_req *rqstp) {
     strcpy(out.get_out_u.paper.author, papers[in->number - 1]->author);
     strcpy(out.get_out_u.paper.title, papers[in->number - 1]->title);
 
+    // Only send the entire document if explicitly asked for
     if (in->representation == DETAILED) {
         out.get_out_u.paper.content = malloc(sizeof(data));
         if (out.get_out_u.paper.content == NULL) {
             perror("Unable to allocate necessary memory");
             exit(EXIT_FAILURE);
         }
-        out.get_out_u.paper.content->data_val = malloc(papers[in->number - 1]->size);
+        out.get_out_u.paper.content->data_val =
+            malloc(papers[in->number - 1]->size);
         if (out.get_out_u.paper.content->data_val == NULL) {
             perror("Unable to allocate necessary memory");
             exit(EXIT_FAILURE);
         }
-        memcpy(out.get_out_u.paper.content->data_val, papers[in->number - 1]->data, papers[in->number - 1]->size);
+        memcpy(out.get_out_u.paper.content->data_val,
+               papers[in->number - 1]->data,
+               papers[in->number - 1]->size);
         out.get_out_u.paper.content->data_len = papers[in->number - 1]->size;
     } else {
         out.get_out_u.paper.content = NULL;
@@ -186,8 +200,8 @@ get_out *get_proc_1_svc(get_in *in, struct svc_req *rqstp) {
 
 
 /*
-  TODO: Check XDR structures for NULL pointers, we should not trust rpcgen too
-        much.
+  TODO: Check XDR structures for NULL pointers, we should not trust rpcgen and
+        the client too much.
 */
 list_out *list_proc_1_svc(void *in, struct svc_req *rqstp) {
 
@@ -201,6 +215,8 @@ list_out *list_proc_1_svc(void *in, struct svc_req *rqstp) {
 
     out.papers = NULL;
 
+    // Always remember the address where a pointer to the current paper must
+    // be stored
     previous = &out.papers;
 
     for (i = 0; i < papers_count; i++) {
@@ -210,6 +226,8 @@ list_out *list_proc_1_svc(void *in, struct svc_req *rqstp) {
             perror("Unable to allocate necessary memory");
             exit(EXIT_FAILURE);
         }
+
+        // Store a pointer to this paper
         *previous = paper_list;
 
         paper_list->item.number = malloc(sizeof(int));
@@ -236,10 +254,12 @@ list_out *list_proc_1_svc(void *in, struct svc_req *rqstp) {
         // Don't send the entire document
         paper_list->item.content = NULL;
 
+        // A pointer to the next paper should be stored here
         previous = &paper_list->next;
 
     }
 
+    // The last paper has no pointer to the next paper
     *previous = NULL;
 
     return &out;
