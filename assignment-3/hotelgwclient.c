@@ -198,10 +198,14 @@ void list (char *hostname) {
     }
 
     if (*line != '0') {
-        if (*line == '1') {
-            fprintf(stderr, "%s\n", line + 2);
+        if (strlen(line) > 2) {
+            if (*line == '1') {
+                fprintf(stderr, "%s\n", line + 2);
+            } else {
+                fprintf(stderr, "Error response: %s\n", line + 2);
+            }
         } else {
-            fprintf(stderr, "Error response: %s\n", line + 2); // todo check if +2 exists
+            fprintf(stderr, "Cannot read response\n");
         }
         exit(EXIT_FAILURE);
     }
@@ -253,10 +257,14 @@ void book (char *hostname, char *type, char *guest) {
     }
 
     if (*line != '0') {
-        if (*line == '1') {
-            fprintf(stderr, "%s\n", line + 2);
+        if (strlen(line) > 2) {
+            if (*line == '1') {
+                fprintf(stderr, "%s\n", line + 2);
+            } else {
+                fprintf(stderr, "Error response: %s\n", line + 2);
+            }
         } else {
-            fprintf(stderr, "Error response: %s\n", line + 2); // todo check if +2 exists
+            fprintf(stderr, "Cannot read response\n");
         }
         exit(EXIT_FAILURE);
     }
@@ -305,10 +313,14 @@ void book_any (char *hostname, char *guest) {
     }
 
     if (*line != '0') {
-        if (*line == '1') {
-            fprintf(stderr, "%s\n", line + 2);
+        if (strlen(line) > 2) {
+            if (*line == '1') {
+                fprintf(stderr, "%s\n", line + 2);
+            } else {
+                fprintf(stderr, "Error response: %s\n", line + 2);
+            }
         } else {
-            fprintf(stderr, "Error response: %s\n", line + 2); // todo check if +2 exists
+            fprintf(stderr, "Cannot read response\n");
         }
         exit(EXIT_FAILURE);
     }
@@ -350,12 +362,15 @@ void guests (char *hostname) {
     }
 
     if (*line != '0') {
-        if (*line == '1') {
-            fprintf(stderr, "%s\n", line + 2);
+        if (strlen(line) > 2) {
+            if (*line == '1') {
+                fprintf(stderr, "%s\n", line + 2);
+            } else {
+                fprintf(stderr, "Error response: %s\n", line + 2);
+            }
         } else {
-            fprintf(stderr, "Error response: %s\n", line + 2); // todo check if +2 exists
+            fprintf(stderr, "Cannot read response\n");
         }
-        // TODO: read empty line
         exit(EXIT_FAILURE);
     }
 

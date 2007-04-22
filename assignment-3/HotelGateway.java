@@ -180,7 +180,7 @@ public class HotelGateway {
                 if (cause == null) {
                     cause = e;
                 }
-                sendResponse(response, STATUS_APPLICATION_ERROR, "Error contacting hotel service : " + cause.getMessage().replaceAll("\n", " "));
+                sendResponse(response, STATUS_APPLICATION_ERROR, "Error contacting hotel service: " + cause.getMessage().replaceAll("\n", " "));
                 return;
             }
             sendResponse(response, STATUS_OK, "Ok");
@@ -206,7 +206,7 @@ public class HotelGateway {
                 if (cause == null) {
                     cause = e;
                 }
-                sendResponse(response, STATUS_APPLICATION_ERROR, "Error contacting hotel service : " + cause.getMessage().replaceAll("\n", " "));
+                sendResponse(response, STATUS_APPLICATION_ERROR, "Error contacting hotel service: " + cause.getMessage().replaceAll("\n", " "));
                 return;
             }
             
@@ -250,7 +250,7 @@ public class HotelGateway {
                 if (cause == null) {
                     cause = e;
                 }
-                sendResponse(response, STATUS_APPLICATION_ERROR, "Error contacting hotel service : " + cause.getMessage().replaceAll("\n", " "));
+                sendResponse(response, STATUS_APPLICATION_ERROR, "Error contacting hotel service: " + cause.getMessage().replaceAll("\n", " "));
                 return;
             }
             
