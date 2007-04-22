@@ -30,6 +30,7 @@ void add(char *hostname, char *author, char *title, char *filename) {
     add_out *out;
     FILE *stream;
     struct stat file_stat;
+    char *p;
 
     if (strlen(author) > MAX_AUTHOR_LENGTH) {
         fprintf(stderr, "Maximum length for author is %d\n",
@@ -42,7 +43,13 @@ void add(char *hostname, char *author, char *title, char *filename) {
                 MAX_TITLE_LENGTH);
         exit(EXIT_FAILURE);
     }
-
+    
+    p = strrchr(filename, '.');
+    if(p == NULL || !(!strcmp(p+1, "pdf") || !strcmp(p+1, "doc"))) {
+        fprintf(stderr, "Paper must have pdf or doc file extension\n");
+        exit(EXIT_FAILURE);
+    }
+    
     if (stat(filename, &file_stat) == -1) {
         perror("Cannot stat file");
         exit(EXIT_FAILURE);
