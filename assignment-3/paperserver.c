@@ -54,7 +54,7 @@ add_out *add_proc_1_svc(add_in *in, struct svc_req *rqstp) {
     // Resize paper buffer
     if (papers_count == papers_size) {
         papers = realloc(papers,
-                         papers_size + (PAPER_BUFFER_SIZE * sizeof(void*)));
+                         ((papers_size + PAPER_BUFFER_SIZE) * sizeof(void*)));
         if (papers == NULL) {
             // Remember to free() the original buffer if we would remove the
             // exit() call
