@@ -126,6 +126,11 @@ void print_availability (char *availability) {
     float price;
     int number;
 
+    if (type == NULL) {
+        perror("Unable to allocate necessary memory");
+        exit(EXIT_FAILURE);
+    }
+
     if (sscanf(availability, AVAILABILITY_FORMAT, type, &price, &number) != 3) {
         fprintf(stderr, "Cannot read response\n");
         exit(EXIT_FAILURE);
@@ -226,8 +231,13 @@ void list (char *hostname) {
 void book (char *hostname, char *type, char *guest) {
 
     int server_socket;
-    char *request = malloc(strlen(BOOK_REQUEST) + strlen(type) + strlen(guest) + 1); // Sloppy, but ok
+    char *request = malloc(strlen(BOOK_REQUEST) + strlen(type) + strlen(guest) + 1);  // Sloppy, but ok
     char *line;
+
+    if (request == NULL) {
+        perror("Unable to allocate necessary memory");
+        exit(EXIT_FAILURE);
+    }
 
     snprintf(request, strlen(BOOK_REQUEST) + strlen(type) + strlen(guest) + 1, BOOK_REQUEST, type, guest);
 
@@ -275,6 +285,11 @@ void book_any (char *hostname, char *guest) {
     int server_socket;
     char *request = malloc(strlen(BOOK_ANY_REQUEST) + strlen(guest) + 1);  // Sloppy, but ok
     char *line;
+
+    if (request == NULL) {
+        perror("Unable to allocate necessary memory");
+        exit(EXIT_FAILURE);
+    }
 
     snprintf(request, strlen(BOOK_ANY_REQUEST) + strlen(guest) + 1, BOOK_ANY_REQUEST, guest);
 

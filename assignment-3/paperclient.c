@@ -17,6 +17,11 @@ void usage_error () {
 }
 
 
+/*
+  TODO: We could add a check for the filename extension (.pdf/.doc).
+  TODO: Check XDR structures for NULL pointers, we should not trust rpcgen too
+  much.
+*/
 void add (char *hostname, char *author, char *title, char *filename) {
 
     CLIENT *client;
@@ -24,8 +29,6 @@ void add (char *hostname, char *author, char *title, char *filename) {
     add_out *out;
     FILE *stream;
     struct stat file_stat;
-
-    // TODO: check filename extension
 
     if (strlen(author) > MAX_AUTHOR_LENGTH) {
         fprintf(stderr, "Maximum length for author is %d\n", MAX_AUTHOR_LENGTH);
@@ -44,10 +47,13 @@ void add (char *hostname, char *author, char *title, char *filename) {
 
     in.paper.number = NULL;
 
-    in.paper.content = malloc(sizeof(data)); // TODO: malloc error
+    in.paper.content = malloc(sizeof(data));
+    if (in.paper.content == NULL) {
+        perror("Unable to allocate necessary memory");
+        exit(EXIT_FAILURE);
+    }
     in.paper.content->data_len = file_stat.st_size;
     in.paper.content->data_val = malloc(file_stat.st_size);
-
     if (in.paper.content->data_val == NULL) {
         perror("Error allocating memory");
         exit(EXIT_FAILURE);
@@ -104,6 +110,10 @@ void add (char *hostname, char *author, char *title, char *filename) {
 }
 
 
+/*
+  TODO: Check XDR structures for NULL pointers, we should not trust rpcgen too
+  much.
+*/
 void detail (char *hostname, char *number) {
 
     CLIENT *client;
@@ -142,6 +152,10 @@ void detail (char *hostname, char *number) {
 }
 
 
+/*
+  TODO: Check XDR structures for NULL pointers, we should not trust rpcgen too
+  much.
+*/
 void fetch (char *hostname, char *number) {
 
     // TODO: merge more code of all methods (or just of fetch/details)
@@ -175,7 +189,6 @@ void fetch (char *hostname, char *number) {
         exit(EXIT_FAILURE);
     }
 
-    // TODO: maybe to make it more robust, always check for NULL pointers (content), also in other procedures
     if (fwrite(out->get_out_u.paper.content->data_val, out->get_out_u.paper.content->data_len, 1, stdout) != 1) {
         perror("Error writing paper to standard output");
         clnt_destroy(client);
@@ -187,6 +200,10 @@ void fetch (char *hostname, char *number) {
 }
 
 
+/*
+  TODO: Check XDR structures for NULL pointers, we should not trust rpcgen too
+  much.
+*/
 void list (char *hostname) {
 
     CLIENT *client;

@@ -9,7 +9,7 @@ Some Java classes are needed to run the gateway, edit the 'hotelgw' shell
 script to your liking. See the Java HotelGateway documentation for more info.
 
 
-Copyright 2007, Martijn Vermaat (martijn@vermaat.name)
+Copyright 2007, Martijn Vermaat <martijn@vermaat.name>
 
 All rights reserved.
 

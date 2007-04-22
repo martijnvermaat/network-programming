@@ -1,2 +1,2 @@
 #!/bin/sh
-/usr/bin/erl -pa ./ -noshell -run hotelgwclient start ${*} -run erlang halt
+/usr/bin/erl -pa ./ -noshell -run hotelgwclient start "${@}" -run erlang halt

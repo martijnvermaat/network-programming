@@ -8,4 +8,4 @@
 #   SimpleHotel_Stub
 
 CLASSPATH=$CLASSPATH:../
-jython hotelgw.py ${*}
+jython hotelgw.py "${@}"
