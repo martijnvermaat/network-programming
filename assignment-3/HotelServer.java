@@ -16,12 +16,12 @@ public class HotelServer {
             System.err.println(e.getMessage());
             System.exit(1);
         }
-           
 
         try {
             Hotel ourHotel = new SimpleHotel();
             Naming.rebind("rmi://localhost/HotelService", ourHotel);
-        } catch(Exception e) { // TODO: too generic? Perhaps add all exceptions
+        } catch(Exception e) {
+            // TODO: Too generic? Perhaps add all exceptions explicitly?
             System.err.println("HotelServer error: " + e.getMessage());
         }
 
@@ -34,4 +34,3 @@ public class HotelServer {
 
 
 }
-

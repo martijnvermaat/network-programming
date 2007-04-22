@@ -9,6 +9,7 @@ class SimpleHotel extends UnicastRemoteObject implements Hotel {
 
     private Set<Room> rooms;
 
+
     synchronized public void bookRoom(int roomType, String guest)
         throws NotAvailableException, RemoteException {
 
@@ -23,7 +24,8 @@ class SimpleHotel extends UnicastRemoteObject implements Hotel {
                         booked = true;
                         break;
                     } catch (NotAvailableException e) {
-                        System.err.println("HotelImpl exception: available room is booked");
+                        System.err.println(
+                            "HotelImpl exception: available room is booked");
                     }
                 }
             }
@@ -31,7 +33,8 @@ class SimpleHotel extends UnicastRemoteObject implements Hotel {
         }
 
         if (!booked) {
-            throw new NotAvailableException("No room available of type " + roomType);
+            throw new NotAvailableException("No room available of type "
+                                            + roomType);
         }
 
     }
@@ -50,7 +53,8 @@ class SimpleHotel extends UnicastRemoteObject implements Hotel {
                     booked = true;
                     break;
                 } catch (NotAvailableException e) {
-                    System.err.println("HotelImpl exception: available room is booked");
+                    System.err.println(
+                        "HotelImpl exception: available room is booked");
                 }
             }
 
@@ -68,12 +72,18 @@ class SimpleHotel extends UnicastRemoteObject implements Hotel {
 
         Set<String> guests = new HashSet<String>();
 
+        /*
+          Once a room is booked, it cannot be unbooked. Otherwise, this
+          code would not be thread safe.
+        */
+
         for (Room room : this.rooms) {
             if (!room.isAvailable()) {
                 try {
                     guests.add(room.getGuest());
                 } catch (NotBookedException e) {
-                    System.err.println("HotelImpl exception: reserved room is not reserved");
+                    System.err.println(
+                        "HotelImpl exception: reserved room is not reserved");
                 }
             }
         }
@@ -88,6 +98,12 @@ class SimpleHotel extends UnicastRemoteObject implements Hotel {
 
         Set<Availability> availables = new HashSet<Availability>();
         boolean typeFound;
+
+        /*
+          This code is somewhat buggy with threading. However, this is not a
+          big concern in this specific case. The resulting availability
+          snapshot might not represent any specific moment in time.
+        */
 
         for (Room room : this.rooms) {
 
@@ -104,7 +120,10 @@ class SimpleHotel extends UnicastRemoteObject implements Hotel {
                 }
 
                 if (!typeFound) {
-                    availables.add(new Availability(room.getRoomType().getType(), room.getRoomType().getPrice(), 1));
+                    availables.add(new Availability(
+                                       room.getRoomType().getType(),
+                                       room.getRoomType().getPrice(),
+                                       1));
                 }
 
             }

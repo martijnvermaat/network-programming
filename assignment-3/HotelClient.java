@@ -13,7 +13,8 @@ public class HotelClient {
     Hotel hotel;
 
 
-    public HotelClient(String host) throws MalformedURLException, NotBoundException, RemoteException {
+    public HotelClient(String host)
+        throws MalformedURLException, NotBoundException, RemoteException {
         hotel = (Hotel) Naming.lookup("rmi://" + host + "/HotelService");
     }
 
@@ -28,19 +29,22 @@ public class HotelClient {
     }
 
 
-    public void bookRoom(String guest) throws NotAvailableException, RemoteException {
+    public void bookRoom(String guest)
+        throws NotAvailableException, RemoteException {
         hotel.bookRoom(guest);
     }
 
 
-    public void bookRoom(int type, String guest) throws NotAvailableException, RemoteException {
+    public void bookRoom(int type, String guest)
+        throws NotAvailableException, RemoteException {
         hotel.bookRoom(type, guest);
     }
 
 
     private static void usageError() {
-        System.out.println("usage: hotelclient list <hostname>");
-        System.out.println("       hotelclient book <hostname> [type] <guest>");
+        System.out.println("usage: hotelclient list <hostname>"
+        System.out.println(
+            "       hotelclient book <hostname> [type] <guest>");
         System.out.println("       hotelclient guests <hostname>");
         System.exit(1);
     }
@@ -51,9 +55,7 @@ public class HotelClient {
         Set<Availability> availables = null;
 
         try {
-
             HotelClient c = new HotelClient(host);
-
             availables = c.availableRooms();
          } catch (MalformedURLException e) {
             System.err.println("Invalid host: " + host);
@@ -62,7 +64,8 @@ public class HotelClient {
             System.err.println("Hotel service not found");
             System.exit(1);
         } catch (RemoteException e) {
-            System.err.println("Error contacting hotel service: " + e.getMessage());
+            System.err.println("Error contacting hotel service: "
+                               + e.getMessage());
             System.exit(1);
         }
 
@@ -75,10 +78,13 @@ public class HotelClient {
 
             System.out.println("Available rooms:");
 
-            SortedSet<Availability> sorted_availables = new TreeSet<Availability>(availables);
+            SortedSet<Availability> sorted_availables =
+                new TreeSet<Availability>(availables);
 
             for (Availability a : sorted_availables) {
-                System.out.printf("  %3d room(s) of type %3d at %.2f euros per night\n",a.getNumberOfRooms(), a.getType(), a.getPrice());
+                System.out.printf(
+                    "  %3d room(s) of type %3d at %.2f euros per night\n",
+                    a.getNumberOfRooms(), a.getType(), a.getPrice());
             }
 
         }
@@ -91,7 +97,6 @@ public class HotelClient {
     private static void book(String host, String guest) {
 
         try {
-
             HotelClient c = new HotelClient(host);
             try {
                 c.bookRoom(guest);
@@ -107,7 +112,8 @@ public class HotelClient {
             System.err.println("Hotel service not found");
             System.exit(1);
         } catch (RemoteException e) {
-            System.err.println("Error contacting hotel service: " + e.getMessage());
+            System.err.println("Error contacting hotel service: "
+                               + e.getMessage());
             System.exit(1);
         }
 
@@ -119,7 +125,6 @@ public class HotelClient {
     private static void book(String host, int type, String guest) {
 
         try {
-
             HotelClient c = new HotelClient(host);
             try {
                 c.bookRoom(type, guest);
@@ -135,7 +140,8 @@ public class HotelClient {
             System.err.println("Hotel service not found");
             System.exit(1);
         } catch (RemoteException e) {
-            System.err.println("Error contacting hotel service: " + e.getMessage());
+            System.err.println("Error contacting hotel service: "
+                               + e.getMessage());
             System.exit(1);
         }
 
@@ -149,11 +155,8 @@ public class HotelClient {
         Set<String> guests = null;
 
         try {
-
             HotelClient c = new HotelClient(host);
-
             guests = c.registeredGuests();
-
         } catch (MalformedURLException e) {
             System.err.println("Invalid host: " + host);
             System.exit(1);
@@ -161,7 +164,8 @@ public class HotelClient {
             System.err.println("Hotel service not found");
             System.exit(1);
         } catch (RemoteException e) {
-            System.err.println("Error contacting hotel service: " + e.getMessage());
+            System.err.println("Error contacting hotel service: "
+                               + e.getMessage());
             System.exit(1);
         }
 
