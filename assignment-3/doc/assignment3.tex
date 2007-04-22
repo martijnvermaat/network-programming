@@ -52,9 +52,11 @@ This seems to be large enough for transmitting papers.
 
 \section{A Hotel Reservation Server}
 \paragraph{Question 3}
-Ik weet niet zo goed wat ik hier moet antwoorden. De parameters die we hebben worden of direct overgestuurd (int), of eerst geserialized en dan overgestuurd (String). De Strings zijn dus referenties, maar dat kan nou eenmaal niet anders. Maar, ze worden altijd by value overgestuurd. De Sets die we terugsturen zijn ook referenties, maar worden ook geserialized.
+Each method parameter should be passed by value, never by reference (if you do try to send by reference everything related to that particular object will be serialized first which can result in megabytes of data if you are not careful with internal references). This is because the variables have to be local if the server wants to manipulate them; it cannot manipulate variables that still reside at the client.
 
-Wat wil hij nou van ons horen?
+In our solution we send only integers (Java primitive, always used by value) and Strings (immutable object, but serialization is needed) to the server. This is the only data the server really needs to be able to do its job, there is no need to send larger data structures, so we do not risk sending too much data.
+
+As result our server sends back a Set of Strings or a set of Availability objects which in turn consists of 2 integers and a float (all Java primitives), so also here we do not risk sending too much data.
 
 \section{A Hotel Reservation Gateway}
 \paragraph{Question 4}
