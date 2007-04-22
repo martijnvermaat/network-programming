@@ -87,9 +87,7 @@ In the specification file paperstorage.x our procedures and data types are defin
 \paragraph{paperclient.c}
 The program starts by typing ./paperclient followed by a number of parameters. How to use the program is printed by omitting the parameters. When the program starts it parses the parameters and executes the corresponding routine, otherwise it will print an error message.
 
-The add, detail, fetch, and list routines roughly work as follows. A client structure is created, parameters are set, remote procedure is called, and results are printed on standard output. That means that also the fetched paper will be printed out standard out.
-
-You will have to redirect the output if you want to save the file. We have chosen not to save the file in, for example, the local directory because stored papers might have the same filename.
+The add, detail, fetch, and list routines roughly work as follows. A client structure is created, parameters are set, remote procedure is called, and results are printed on standard output. That means that also the fetched paper will be printed to standard out. You will have to redirect the output if you want to save the file. We have chosen not to save the file in, for example, the local directory because stored papers might have the same filename.
 
 The paper client uses the following parameters:
 
@@ -122,7 +120,7 @@ The program starts by typing ./paperserver. When the program starts it waits for
 
 The server keeps an array of pointers to paper\_t structs. If the array becomes full, it is resized. When a paper is added a piece of memory is allocated and paper details and paper file are copied. Then the number under which the paper is stored is sent back to the client.
 
-When a list request comes in a linked list containing information about each paper is contructed and sent back.
+When a list request comes in a linked list containing information about each paper is constructed and sent back.
 
 The detail and fetch routines of the client are handled by the same procedure on the server. The only difference is whether they use the \emph{sparse} or \emph{detailed} flag. In both cases the author and paper title is sent back, but in the case of fetch also the paper file is copied into the result.
 
@@ -267,7 +265,7 @@ As pointed out in our answer to question 5, we have decided to use a plain-text 
  \> guest := a valid string without newline\\
  \> newline := '\textbackslash n' \-\\ 
  \> a response is a sequence of ASCII characters:\+ \\
- \> respone := status space description newline result newline \\
+ \> response := status space description newline result newline \\
  \> status := '0' $\vert$ '1' $\vert$ '2'\\
  \> space := ' '\\
  \> description := a valid string without newline\\
