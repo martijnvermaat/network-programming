@@ -36,6 +36,9 @@ add_out *add_proc_1_svc(add_in *in, struct svc_req *rqstp) {
     struct paper_t *paper;
     static add_out out;
 
+    // We can only do so much, free the result of the previous call
+    xdr_free((xdrproc_t) xdr_add_out, (char *) &out);
+
     out.result = STATUS_SUCCESS;
 
     // Initialize paper buffer
@@ -92,8 +95,23 @@ add_out *add_proc_1_svc(add_in *in, struct svc_req *rqstp) {
     }
     *out.add_out_u.paper.number = papers_count;
 
-    out.add_out_u.paper.author = papers[papers_count - 1]->author;
-    out.add_out_u.paper.title = papers[papers_count - 1]->title;
+    // Yes, we keep on doing malloc()s instead of pointing to our fine data
+    // structure. Being consistent in this way, makes it easy to free the
+    // entire structure with a xdr_free() call.
+    // (This is the way we do it in all procedures.)
+    out.add_out_u.paper.author = malloc(strlen(papers[papers_count - 1]->author) + 1);
+    if (out.add_out_u.paper.author == NULL) {
+        perror("Unable to allocate necessary memory");
+        exit(EXIT_FAILURE);
+    }
+    out.add_out_u.paper.title = malloc(strlen(papers[papers_count - 1]->title) +1);
+    if (out.add_out_u.paper.title == NULL) {
+        perror("Unable to allocate necessary memory");
+        exit(EXIT_FAILURE);
+    }
+
+    strcpy(out.add_out_u.paper.author, papers[papers_count - 1]->author);
+    strcpy(out.add_out_u.paper.title, papers[papers_count - 1]->title);
 
     return &out;
 
@@ -107,6 +125,9 @@ add_out *add_proc_1_svc(add_in *in, struct svc_req *rqstp) {
 get_out *get_proc_1_svc(get_in *in, struct svc_req *rqstp) {
 
     static get_out out;
+
+    // We can only do so much, free the result of the previous call
+    xdr_free((xdrproc_t) xdr_get_out, (char *) &out);
 
     out.result = STATUS_SUCCESS;
 
@@ -128,8 +149,19 @@ get_out *get_proc_1_svc(get_in *in, struct svc_req *rqstp) {
     }
     *out.get_out_u.paper.number = in->number;
 
-    out.get_out_u.paper.author = papers[in->number - 1]->author;
-    out.get_out_u.paper.title = papers[in->number - 1]->title;
+    out.get_out_u.paper.author = malloc(strlen(papers[in->number - 1]->author) + 1);
+    if (out.get_out_u.paper.author == NULL) {
+        perror("Unable to allocate necessary memory");
+        exit(EXIT_FAILURE);
+    }
+    out.get_out_u.paper.title = malloc(strlen(papers[in->number - 1]->title) + 1);
+    if (out.get_out_u.paper.title == NULL) {
+        perror("Unable to allocate necessary memory");
+        exit(EXIT_FAILURE);
+    }
+
+    strcpy(out.get_out_u.paper.author, papers[in->number - 1]->author);
+    strcpy(out.get_out_u.paper.title, papers[in->number - 1]->title);
 
     if (in->representation == DETAILED) {
         out.get_out_u.paper.content = malloc(sizeof(data));
@@ -137,8 +169,13 @@ get_out *get_proc_1_svc(get_in *in, struct svc_req *rqstp) {
             perror("Unable to allocate necessary memory");
             exit(EXIT_FAILURE);
         }
+        out.get_out_u.paper.content->data_val = malloc(papers[in->number - 1]->size);
+        if (out.get_out_u.paper.content->data_val == NULL) {
+            perror("Unable to allocate necessary memory");
+            exit(EXIT_FAILURE);
+        }
+        memcpy(out.get_out_u.paper.content->data_val, papers[in->number - 1]->data, papers[in->number - 1]->size);
         out.get_out_u.paper.content->data_len = papers[in->number - 1]->size;
-        out.get_out_u.paper.content->data_val = papers[in->number - 1]->data;
     } else {
         out.get_out_u.paper.content = NULL;
     }
@@ -159,6 +196,9 @@ list_out *list_proc_1_svc(void *in, struct svc_req *rqstp) {
     document_list *previous;
     int i;
 
+    // We can only do so much, free the result of the previous call
+    xdr_free((xdrproc_t) xdr_list_out, (char *) &out);
+
     out.papers = NULL;
 
     previous = &out.papers;
@@ -170,7 +210,7 @@ list_out *list_proc_1_svc(void *in, struct svc_req *rqstp) {
             perror("Unable to allocate necessary memory");
             exit(EXIT_FAILURE);
         }
-        *previous  = paper_list;
+        *previous = paper_list;
 
         paper_list->item.number = malloc(sizeof(int));
         if (paper_list->item.number == NULL) {
@@ -179,16 +219,22 @@ list_out *list_proc_1_svc(void *in, struct svc_req *rqstp) {
         }
         *paper_list->item.number = i + 1;
 
-        paper_list->item.author = papers[i]->author;
-        paper_list->item.title = papers[i]->title;
-
-        paper_list->item.content = malloc(sizeof(data));
-        if (paper_list->item.content == NULL) {
+        paper_list->item.author = malloc(strlen(papers[i]->author) + 1);
+        if (paper_list->item.author == NULL) {
             perror("Unable to allocate necessary memory");
             exit(EXIT_FAILURE);
         }
-        paper_list->item.content->data_len = papers[i]->size;
-        paper_list->item.content->data_val = papers[i]->data;
+        paper_list->item.title = malloc(strlen(papers[i]->title) + 1);
+        if (paper_list->item.title == NULL) {
+            perror("Unable to allocate necessary memory");
+            exit(EXIT_FAILURE);
+        }
+
+        strcpy(paper_list->item.author, papers[i]->author);
+        strcpy(paper_list->item.title, papers[i]->title);
+
+        // Don't send the entire document
+        paper_list->item.content = NULL;
 
         previous = &paper_list->next;
 
