@@ -113,7 +113,7 @@ Availability objects which in turn consist of 2 integers and a float
 data.
 
 See also section \ref{sec:hotel} for a description of the server
-interface. % TODO: hold this promise
+interface.
 
 \section{A Hotel Reservation Gateway}
 \paragraph{Question 4}
@@ -127,8 +127,7 @@ thread for each incoming connection, this will not be a problem
 anymore. Of course the server (not the gateway) must support
 concurrent connections. To this end we made the book method on Room
 objects synchronized, since that is the only place that might cause
-problems when multiple clients want to book the same rooms.
-% TODO: ``see [...] for more comments on synchronization''
+problems when multiple clients want to book the same room.
 
 \paragraph{Question 5}
 To design a protocol that is suitable for multiple platforms and
@@ -149,11 +148,9 @@ returns). Integers are represented by their obvious \textsc{ASCII}
 representation.
 
 (For a more detailed description of our protocol, see the program
-documentation for the hotel gateway in section \ref{sec:gateway}.) % TODO float description
+documentation for the hotel gateway in section \ref{sec:gateway}.)
 
 \paragraph{Question 6}
-% TODO: we need to give a list of files for each program. maybe
-% consider both runtime and compiletime dependencies...
 We give a list of files each user needs for compiling the user
 program.
 
@@ -228,12 +225,22 @@ paperserver.c & an iterative server that accepts papers and provides information
 \end{tabular}
 \end{center}
 
-In the specification file paperstorage.x our procedures and data types are defined.
+In the specification file \texttt{paperstorage.x} our procedures and data types are defined.
 
 \paragraph{paperclient.c}
-The program starts by typing ./paperclient followed by a number of parameters. How to use the program is printed by omitting the parameters. When the program starts it parses the parameters and executes the corresponding routine, otherwise it will print an error message.
+The program starts by typing \texttt{./paperclient} followed by a number of
+parameters. How to use the program is printed by omitting the
+parameters. When the program starts it parses the parameters and
+executes the corresponding routine, otherwise it will print an error
+message.
 
-The add, detail, fetch, and list routines roughly work as follows. A client structure is created, parameters are set, remote procedure is called, and results are printed on standard output. That means that also the fetched paper will be printed to standard out. You will have to redirect the output if you want to save the file. We have chosen not to save the file in, for example, the local directory because stored papers might have the same filename.
+The \texttt{add}, \texttt{detail}, \texttt{fetch}, and list routines roughly work as follows. A
+client structure is created, parameters are set, remote procedure is
+called, and results are printed on standard output. That means that
+also the fetched paper will be printed to standard out. You will have
+to redirect the output if you want to save the file. We have chosen
+not to save the file in, for example, the local directory because
+stored papers might have the same filename.
 
 The paper client uses the following parameters:
 
@@ -262,23 +269,66 @@ The paper client uses the following parameters:
 \end{tabbing}
 
 \paragraph{paperserver.c}
-The program starts by typing ./paperserver. When the program starts it waits for incoming connections (not actually part of the paperserver object file), and handles the requests.
+The program starts by typing \texttt{./paperserver}. When the program starts it
+waits for incoming connections (not actually part of the paperserver
+object file), and handles the requests. It is an iterative server,
+dictated by the nature of \textsc{Sun RPC}.
 
-The server keeps an array of pointers to paper\_t structs. If the array becomes full, it is resized. When a paper is added a piece of memory is allocated and paper details and paper file are copied. Then the number under which the paper is stored is sent back to the client.
+The server keeps an array of pointers to \texttt{paper\_t} structs. If the
+array becomes full, it is resized. When a paper is added a piece of
+memory is allocated and paper details and paper file are copied. Then
+the number under which the paper is stored is sent back to the
+client.
 
-When a list request comes in a linked list containing information about each paper is constructed and sent back.
+When a list request comes in a linked list containing information
+about each paper is constructed and sent back.
 
-The detail and fetch routines of the client are handled by the same procedure on the server. The only difference is whether they use the \emph{sparse} or \emph{detailed} flag. In both cases the author and paper title is sent back, but in the case of fetch also the paper file is copied into the result.
+The \texttt{detail} and \texttt{fetch} routines of the client are handled by the same
+procedure on the server. The only difference is whether they use the
+\emph{sparse} or \emph{detailed} flag. In both cases the author and
+paper title is sent back, but in the case of fetch also the paper file
+is copied into the result.
 
-The server uses TCP connections, because the server routines would have to be idem potent if we were to use UDP. This is no problem with the detail, fetch, and list routines, however, we do not want to have a paper stored multiple times with the add routine because of connection problems. 
+The server uses TCP connections, because the server routines would
+have to be idempotent if we were to use UDP. This is no problem with
+the \texttt{detail}, \texttt{fetch}, and \texttt{list} routines, however, we do not want to have
+a paper stored multiple times with the add routine because of
+connection problems.
+
+Result values are static, because they must not be destroyed when our
+routines exit (the \textsc{Sun RPC} code still has to send the result
+to the calling program). However, we do like to free the return values
+sometime. The earliest time we can do this is on the next remote
+procedure call.
+We choose to just free the result of a procedure on the next invocation
+of that particular procedure, although with a bit of extra work we could
+have made it so that result values are freed on the next invocation of
+\emph{any} procedure.
+We use the \textsc{Sun RPC}-provided \texttt{xdr\_free()} function to
+free the memory of previous return values. To use it successfully
+though, we had to make sure that there is no data in the freed
+structure that we might need later on.
 
 \paragraph{paperstorage.x}
-As mentioned earlier it is possible to use different techniques to transfer variably sized data. Where it is possible to use an array with maximum size, we used a linked list.
+As mentioned earlier it is possible to use different techniques to
+transfer variably sized data. While it is possible to use an array
+with (implicit) maximum size, we used a linked list as a datastructure
+for any number of papers.
 
-When a procedure fails, we wanted to send back information telling why something went wrong. Instead of incorporating every bit of data in a structure, we used the more efficient unions.
+To make the interface a bit more elegant, we tried to use some generic
+structures as much as posibble, sometimes with optional values. Also,
+some procedures return more information than is currently used by our
+client implementation, but we tried to choose the most elegant
+solution.
+
+When a procedure fails, we wanted to send back information telling why
+something went wrong. Instead of incorporating every bit of data in a
+structure, we used the more efficient unions.
+
 
 \subsection{A Hotel Reservation Server}\label{sec:hotel}
-Our implementation is tested on GNU/Linux using JDK 1.5.0\_06-b5 and JDK 1.5.0\_09-b03.
+Our implementation is tested on \textsc{GNU/Linux} using
+\textsc{JDK 1.5.0\_06-b5} and \textsc{JDK 1.5.0\_09-b03}.
 
 For the hotel reservation server we have written 9 classes:
 \begin{center}
@@ -297,14 +347,21 @@ SimpleHotel.java & implementation of the hotel service\\
 \end{center}
 
 \paragraph{Availability.java}
-This class is used in a Set to send information about which types of rooms still have rooms left, and at which price.
+This class is used in a \texttt{Set} to send information about which types of
+rooms still have rooms left, and at which price.
 
 \paragraph{HotelClient.java}
-The program starts by typing ./hotelclient (which is a shell script wrapper around the actual \textsc{Java} program) followed by a number of parameters. How to use the program is printed by omitting the parameters.
+The program starts by typing \texttt{./hotelclient} (which is a shell
+script wrapper around the actual \textsc{Java} program) followed by a
+number of parameters. How to use the program is printed by omitting
+the parameters.
 
-We have designed HotelClient such that it can run on its own, but also that it can be incorporated in a larger software package that needs the book, details, and list functions. For example, to make a graphical wrapper around it.
+We have designed \texttt{HotelClient} such that it can run on its own, but also
+that it can be incorporated in a larger software package that needs
+the book, details, and list functions. For example, to make a
+graphical wrapper around it.
 
-The HotelClient uses the following parameters:
+The \texttt{HotelClient} uses the following parameters:
 
 \begin{tabbing}
 \hspace{20pt}\=\kill
@@ -330,9 +387,10 @@ When the client receives an answer it is printed according to the following form
 % use packages: array
 \begin{tabular}{ l | p{9.3cm} }
 \textbf{command} & \textbf{format}\\ \hline
-list & "\%3d room(s) of type \%s at \%.2f euros per night\textbackslash n", for example, "5 room(s) of type 1 at 150.00 euros per night\textbackslash n"\\ \hline
-book & None or "No rooms of type \emph{type} available" when there are no rooms available of a specific type, or"Unfortunately we're full" when type is omitted and every room is booked \\ \hline
-guests & "\emph{guest}\textbackslash n", for example, "Guillaume Pierre\textbackslash nThomas Veerman\textbackslash nMartijn Vermaat\textbackslash n" \\
+list & ``\%3d room(s) of type \%s at \%.2f euros per night\textbackslash n'', for example, ``5 room(s) of type 1 at 150.00 euros per night\textbackslash n''\\ \hline
+book & ``None'' or ``No rooms of type \emph{type} available'' when
+there are no rooms available of a specific type, or ``Unfortunately we're full'' when type is omitted and every room is booked \\ \hline
+guests & ``\emph{guest}\textbackslash n'', for example, ``Guillaume Pierre\textbackslash nThomas Veerman\textbackslash nMartijn Vermaat\textbackslash n'' \\
 \end{tabular}
 \end{center}
 
@@ -369,30 +427,53 @@ This is the interface for the hotel service running at the hotel reservation ser
 
 
 \paragraph{HotelServer.java}
-The program starts by typing ./hotelserver (which is a shell script wrapper around the actual \textsc{Java} program). Before starting the server the \texttt{rmiregistry} should already be running. However, it is also possible to start your own registry using the \texttt{java.rmi.registry.LocateRegistry} and \texttt{java.rmi.registry.Registry} classes.
+The program starts by typing \texttt{./hotelserver} (which is a shell
+script wrapper around the actual \textsc{Java} program). Before
+starting the server the \texttt{rmiregistry} should already be
+running. However, it is also possible to start your own registry using
+the \texttt{java.rmi.registry.LocateRegistry} and
+\texttt{java.rmi.registry.Registry} classes.
 
-The internal workings are pretty simple. The registry is started, a SimpleHotel (implementation of the Hotel interface) is instantiated and bound in the registry. The registry and SimpleHotel take care of the rest. 
+The internal workings are pretty simple. The registry is started, a
+\texttt{SimpleHotel} (implementation of the \texttt{Hotel} interface) is instantiated
+and bound in the registry. The registry and \texttt{SimpleHotel} take care of
+the rest.
 
 \paragraph{NotAvailableException.java}
-An exception indicating that either the specified room type was not available anymore, or that the hotel is full in the event the client omits sending a specific room type.
+An exception indicating that either the specified room type was not
+available anymore, or that the hotel is full in the event the client
+omits sending a specific room type.
 
 \paragraph{NotBookedException.java}
 An internal exception that occurs when we try to retrieve the name of a guest of a booked room that is not booked (thus there is no guest name). The client will never notice that this exception occurred.
 
 \paragraph{Room.java}
-Structure representing a room. Holds a guest's name when it is booked.
+Structure representing a room. Holds a guest's name when it is
+booked. The \texttt{void book(String guest)} method is declared
+\texttt{synchronized}, to prevent concurrency problems when the seem
+room is tried to be booked twice at the same time.
 
 \paragraph{RoomType.java}
-Structure representing a room type. Holds a int representing the type and a float representing price. Of course, the hotel server can attach names to the numerical types. We have chosen to use ints because it is easier to implement.
+Structure representing a room type. Holds a \texttt{int} representing the type
+and a \texttt{float} representing price. Of course, the hotel server can attach
+names to the numerical types. We have chosen to use \texttt{int}s because it is
+easier to implement.
 
 \paragraph{SimpleHotel.java}
-Implementation of the Hotel interface. It generates a couple of room types and then takes care of the book, list, and guests, methods. The SimpleHotel could easily be extended to store the information in a database or file.
+Implementation of the \texttt{Hotel} interface. It generates a couple of room
+types and then takes care of the \texttt{book}, \texttt{list}, and \texttt{guests} methods. The
+\texttt{SimpleHotel} could easily be extended to store the information in a
+database or file.
 
-The bookRoom method (responsible for bookings) is made synchronized in order to support concurrent connections. This will come in handy for the gateway. The other methods do not need to be synchronized since they only \emph{read} data instead of \emph{write}.
+Although none of its methods are declared \texttt{synchronized}, a
+\texttt{SimpleHotel} instance can be used concurrently. The source
+code contains a few comments on this.
+
 
 \subsection{A Hotel Reservation Gateway}\label{sec:gateway}
 
-Our implementation is tested on GNU/Linux using JDK 1.5.0\_06-b5 and JDK 1.5.0\_09-b03.
+Our implementation is tested on \textsc{GNU/Linux} using
+\textsc{JDK 1.5.0\_06-b5} and \textsc{JDK 1.5.0\_09-b03}.
 
 For the paper storage server we have written 2 programs:
 \begin{center}
@@ -404,59 +485,95 @@ hotelgwclient.c & a client program that connects to the gateway via sockets to b
 \end{center}
 
 \paragraph{HotelGateway.java}
-The program starts by typing ./hotelgw (which is a shell script wrapper around the actual \textsc{Java} program). When the program starts it waits for incoming socket connections. Upon accepting a socket connection, a thread is spawned that handles the request further. In the mean time the server goes back to waiting for new incoming connections.
+The program starts by typing \texttt{./hotelgw} (which is a shell
+script wrapper around the actual \textsc{Java} program). When the
+program starts it waits for incoming socket connections. Upon
+accepting a socket connection, a thread is spawned that handles the
+request further. In the mean time the server goes back to waiting for
+new incoming connections.
 
-The thread processes incoming data according to the protocol we specified. When at some point the client fails to follow the protocol an error message is sent back giving some information that indicates what went wrong. When everything is well the thread connects to the Hotel Server using RMI, and invokes the corresponding methods just like the HotelClient.
+The thread processes incoming data according to the protocol we
+specify in more detail below. When at some point the client fails to follow the protocol
+an error message is sent back giving some information that indicates
+what went wrong. When everything is well the thread connects to the
+Hotel Server using \textsc{RMI}, and invokes the corresponding methods just
+like the HotelClient.
 
-The Hotel Gateway assumes it is running on the same host as the Hotel Server and therefore connects to the local RMI Registry. The gateway does not need parameters.
+The Hotel Gateway assumes it is running on the same host as the Hotel
+Server and therefore connects to the local RMI Registry. The gateway
+does not need parameters.
 
 \paragraph{hotelgwclient.c}
-The program starts by typing ./hotelgwclient followed by a number of parameters. How to use the program is printed by omitting the parameters. When the program starts it parses the parameters and executes the corresponding routine, otherwise it will print an error message. The parameters that can be passed are exactly the same as for HotelClient.java.
+The program starts by typing \texttt{./hotelgwclient} followed by a
+number of parameters. How to use the program is printed by omitting
+the parameters. When the program starts it parses the parameters and
+executes the corresponding routine, otherwise it will print an error
+message. The parameters that can be passed are exactly the same as for
+\texttt{HotelClient.java}.
 
-Each of the routines (being "list", "book", and "guests") connects to the gateway, sends the proper procedure to the gateway according to the protocol, and reads the response. If something went wrong (e.g. sending an malformed request or internal error on the server side), the error message is printed. Otherwise the response is parsed and printed using the following formats:
+Each of the routines (being ``list'', ``book'', and ``guests'')
+connects to the gateway, sends the proper procedure to the gateway
+according to the protocol, and reads the response. If something went
+wrong (e.g. sending an malformed request or internal error on the
+server side), the error message is printed. Otherwise the response is
+parsed and printed using the following formats:
 
 \begin{center}
 % use packages: array
 \begin{tabular}{ l | p{9.3cm} }
 \textbf{command} & \textbf{format}\\ \hline
-list & "\%3d room(s) of type \%s at \%.2f euros per night\textbackslash n", for example, "5 room(s) of type 1 at 150.00 euros per night\textbackslash n"\\ \hline
+list & ``\%3d room(s) of type \%s at \%.2f euros per night\textbackslash n'', for example, ``5 room(s) of type 1 at 150.00 euros per night\textbackslash n''\\ \hline
 book & None. It succeeds or an error message is printed \\ \hline
-guests & "\%s\textbackslash n", for example, "Guillaume Pierre\textbackslash nThomas Veerman\textbackslash nMartijn Vermaat\textbackslash n" \\
+guests & ``\%s\textbackslash n'', for example, ``Guillaume Pierre\textbackslash nThomas Veerman\textbackslash nMartijn Vermaat\textbackslash n'' \\
 \end{tabular}
 \end{center}
 
 The client does not need to do host to network conversions, since all data is interpreted byte for byte. Therefore we do not need to concern about byte order.
 
 \paragraph{protocol}
-As pointed out in our answer to question 5, we have decided to use a plain-text protocol for communication over the sockets between the gateway and clients. The protocol is as follows:
+As pointed out in our answer to question 5, we have decided to use a
+plain-text protocol for communication over the sockets between the
+gateway and clients.
+
+A client sends a request message through the socket to the server. The
+server responds with a response message.
+
+The messages are defined as follows:
 
 \begin{tabbing}
 \hspace{20pt}\=\kill
- \> a req\=uest is a sequence of ASCII characters: \+\\ 
+ \> a req\=uest is a sequence of \textsc{ASCII} characters: \+\\
  \> request := procedure newline parameters newline\\
- \> procedure := 'list' $\vert$ 'book' $\vert$ 'guests'\\
+ \> procedure := `list' $\vert$ `book' $\vert$ `guests'\\
  \> parameters := empty $\vert$ ( type newline )? guest newline\\
- \> type := a valid string without newline or space\\ 
- \> guest := a valid string without newline\\
- \> newline := '\textbackslash n' \-\\ 
- \> a response is a sequence of ASCII characters:\+ \\
+ \> type := an ASCII string without newline or space characters\\
+ \> guest := an ASCII string without newline\\
+ \> newline := '\textbackslash n' \-\\
+ \> a response is a sequence of \textsc{ASCII} characters:\+ \\
  \> response := status space description newline result newline \\
- \> status := '0' $\vert$ '1' $\vert$ '2'\\
- \> space := ' '\\
- \> description := a valid string without newline\\
+ \> status := `0' $\vert$ `1' $\vert$ `2'\\
+ \> space := ` '\\
+ \> description := an ASCII string without newline characters\\
  \> result := ( guest newline )* $\vert$ ( availability newline )*\\
- \> guest := a valid string without newline\\
+ \> guest := an ASCII string without newline characters\\
  \> availability := type space price space number\\
- \> type := a valid string without newline or space\\
- \> price := float with precision 2 encoded as ASCII string\\
- \> number := an long integer encoded as ASCII string \-\\
- \> where the meaning of stats is: \+\\
- \> 0 - No error, everything is ok\\
- \> 1 - Application error (see result for string description)\\
- \> 2 - Protocol error (usually malformed request)\\
+ \> type := an ASCII string without newline or space characters\\
+ \> price := float encoded as ASCII string\\
+ \> number := a long integer encoded as ASCII string
 \end{tabbing}
 
+Here, the \texttt{status} field in a response message indicates the
+ following:
+\begin{tabbing}
+\hspace{20pt}\=\kill
+ \> 0 - No error, everything is ok\\
+ \> 1 - Application error (see result for string description)\\
+ \> 2 - Protocol error (usually malformed request)
+\end{tabbing}
 
+The \textsc{ASCII} encoding of a float is to be understood as in the
+behaviour of the \texttt{Java} method
+\texttt{java.lang.Float.toString(float f)}.
 
 
 \end{document}
