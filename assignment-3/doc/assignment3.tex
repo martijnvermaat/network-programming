@@ -29,7 +29,7 @@ a list:
  \>\texttt{typedef document document\_list<>;}
 \end{tabbing}
 
-However, by omitting the size of the array \textsc{Sun RPC}actually reads that
+However, by omitting the size of the array \textsc{Sun RPC} actually reads that
 as $2^{32} - 1$, so in fact it is limited. We have chosen to make a
 linked list:
 
@@ -280,8 +280,37 @@ guests & "\emph{guest}\textbackslash n", for example, "Guillaume Pierre\textback
 \end{center}
 
 \paragraph{Hotel.java}
-This is the interface for the hotel service running at the hotel reservation server. This interface is needed because it is obligatory to extend the java.rmi.Remote interface.
- 
+This is the interface for the hotel service running at the hotel reservation server. This interface is needed because it is obligatory to extend the java.rmi.Remote interface. The interface is as follows:
+
+\begin{tabbing}
+\hspace{20pt}\=\kill
+ \> \texttt{publ}\=\texttt{ic void bookRoom(int roomType, String guest)} \+ \\
+ \> \texttt{throws NotAvailableException, RemoteException;} \- \\
+ \> To book a room with a specific type.
+\end{tabbing}
+
+\begin{tabbing}
+\hspace{20pt}\=\kill
+ \> \texttt{publ}\=\texttt{ic void bookRoom(String guest)} \+\\
+ \> \texttt{throws NotAvailableException, RemoteException;} \- \\
+ \> To book a room (a type will be arbitrarily chosen by the server).
+\end{tabbing}
+
+\begin{tabbing}
+\hspace{20pt}\=\kill
+ \> \texttt{publ}\=\texttt{ic Set<String> registeredGuests()} \+\\
+ \> \texttt{throws RemoteException;} \- \\
+ \> To to retrieve a list of guests.
+\end{tabbing}
+
+\begin{tabbing}
+\hspace{20pt}\=\kill
+ \> \texttt{publ}\=\texttt{ic Set<Availability> availableRooms()} \+\\
+ \> \texttt{throws RemoteException;} \- \\
+ \> To retrieve a listing of available rooms and their types and prices.
+\end{tabbing}
+
+
 \paragraph{HotelServer.java}
 The program starts by typing ./hotelserver (which is a shell script wrapper around the actual \textsc{Java} program). Before starting the server the \texttt{rmiregistry} should already be running. However, it is also possible to start your own registry using the \texttt{java.rmi.registry.LocateRegistry} and \texttt{java.rmi.registry.Registry} classes.
 
