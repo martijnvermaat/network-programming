@@ -2,8 +2,6 @@
 #define __ASSIGNMENT3_H
 
 
-#define DEBUG 1
-
 #ifdef DEBUG
 #define dprint printf
 #else

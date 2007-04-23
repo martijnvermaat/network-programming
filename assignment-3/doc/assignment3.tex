@@ -21,14 +21,17 @@
 
 \section{A Paper Storage Server}
 \paragraph{Question 1}
-It is possible to send any number of paper detail structures by using a list:
+It is possible to send any number of paper detail structures by using
+a list:
 
 \begin{tabbing}
 \hspace{20pt}\=\kill
  \>\texttt{typedef document document\_list<>;}
 \end{tabbing}
 
-However, by omitting the size of the array Sun RPC actually reads that as $2^{32} - 1$, so in fact it is limited. We have chosen to make a linked list:
+However, by omitting the size of the array \textsc{Sun RPC}actually reads that
+as $2^{32} - 1$, so in fact it is limited. We have chosen to make a
+linked list:
 
 \begin{tabbing}
 \hspace{20pt}\=\kill
@@ -39,36 +42,122 @@ However, by omitting the size of the array Sun RPC actually reads that as $2^{32
  \> \} 
 \end{tabbing}
 
+Of course, in practice the linked list will be just as limited in size
+on most systems. Both approaches would suffice for our paper storage
+needs.
+
+In any case, the \textsc{Sun RPC} code will make sure all papers will be
+delivered at the caller as one data structure, even if it has to send
+it in pieces.
+
 \paragraph{Question 2}
-Normally you define a variable with a fixed size, but than can prove to be troublesome when you have to deal with variable sized data. That is, you will have to cut data up in several chunks when its size is larger than your fixed size variable. This is difficult to get right with Sun RPC. Our solution to this problem was to define an array where we omitted the size, thus defining it as an array of $2^{32} - 1$ bytes (or just under 4 GiB).
+The main problem when dealing with variable sized data and \textsc{Sun RPC} is
+keeping memory usage low. Variable sized data is stored by dynamically
+allocating memory and this needs to be freed sometime.
+
+On the client it is all just a matter of
+allocating a piece of memory large enough for the variable sized
+data. We terminate soon after the RPC call is done, so this memory
+will not be held allocated unnecessary long.
+
+On the server however, we need to make sure memory consumption does
+not grow unnecessary at each RPC call. All we can do is free the
+return value of call $n$ as soon as we receive call $n+1$.
+If the entire return value is static, we don't need to do anything,
+because the same memory area will be used for call $n+1$.
+However, with variable sized return values, we definitely want to
+free any dynamically allocated regions as soon as possible (consider
+fetching a 45 megabyte paper). \textsc{Sun RPC} provides functionality to
+recursively free an entire data structure. The downside to using this,
+is that we need to make sure the entire datastructure may be destroyed
+(i.e. does not contain pointers to allocated regions we need later
+on).
+
+Another problem is that our paper data cannot be sent with a NULL byte
+as terminator (the data might contain some itself). Therefore, the
+length of the data needs to be sent with it. With an \textsc{XDR}
+variable-length field, \textsc{Sun RPC} does just that.
+
+This is the datatype we used for paper content. Omitting the length
+implicitely defines it as $2^{32} - 1$:
 
 \begin{tabbing}
 \hspace{20pt}\=\kill
  \>\texttt{typedef opaque data <>;}
 \end{tabbing}
 
-This seems to be large enough for transmitting papers.
+This seems to be large enough for transmitting \textsc{PDF} files (we haven't
+tested the \textsc{DOC} format).
 
 
 \section{A Hotel Reservation Server}
 \paragraph{Question 3}
-Each method parameter should be passed by value, never by reference (if you do try to send by reference everything related to that particular object will be serialized first which can result in megabytes of data if you are not careful with internal references). This is because the variables have to be local if the server wants to manipulate them; it cannot manipulate variables that still reside at the client.
+Each method parameter should be passed by value, never by reference
+(if you do try to send by reference everything related to that
+particular object will be serialized first which can result in
+megabytes of data if you are not careful with internal
+references). This is because the variables have to be local if the
+server wants to manipulate them; it cannot manipulate variables that
+still reside at the client.
 
-In our solution we send only integers (Java primitive, always used by value) and Strings (immutable object, but serialization is needed) to the server. This is the only data the server really needs to be able to do its job, there is no need to send larger data structures, so we do not risk sending too much data.
+In our solution we send only integers (\textsc{Java} primitive, always used by
+value) and Strings (immutable object, but serialization is needed) to
+the server. This is the only data the server really needs to be able
+to do its job, there is no need to send larger data structures, so we
+do not risk sending too much data.
 
-As result our server sends back a Set of Strings or a set of Availability objects which in turn consists of 2 integers and a float (all Java primitives), so also here we do not risk sending too much data.
+As result our server sends back a Set of Strings or a set of
+Availability objects which in turn consist of 2 integers and a float
+(all \textsc{Java} primitives), so also here we do not risk sending too much
+data.
+
+See also section \ref{sec:hotel} for a description of the server
+interface. % TODO: hold this promise
 
 \section{A Hotel Reservation Gateway}
 \paragraph{Question 4}
-We have used one thread per child as server structure. Though it is unlikely that we will be sending big quantities of data, it can occur that a client is on a very bad connection with high latency and low throughput, which will slow down the server. Also, as we found out first hand, clients that do not follow the protocol may keep the connection open so that other clients cannot connect. By spawning a thread for each incoming connection, this will not be a problem anymore. Of course the server (not the gateway) must support concurrent connections. To be able to do that we made the booking method synchronized, since that is the only method that might cause problems when multiple clients want to book the last room (of a specific type). The other methods only read data, which will never be a problem.
+We have used one thread per child as server structure. Though it is
+unlikely that we will be sending big quantities of data, it can occur
+that a client is on a very bad connection with high latency and low
+throughput, which will slow down the server. Also, as we found out
+first hand, clients that do not follow the protocol may keep the
+connection open so that other clients cannot connect. By spawning a
+thread for each incoming connection, this will not be a problem
+anymore. Of course the server (not the gateway) must support
+concurrent connections. To be able to do that we made the booking
+method synchronized, since that is the only method that might cause
+problems when multiple clients want to book the last room (of a
+specific type). The other methods only read data, which will never be
+a problem. % TODO: adapt this to new synchronization strategy
 
 \paragraph{Question 5}
-To design a protocol that is suitable for multiple platforms and languages, you need to make sure to keep the differences between platforms and languages in mind. For example, where one platform considers an int as a 16-bit value, others consider it a 32-bit value. In your protocol you have to standardize these differences.
+To design a protocol that is suitable for multiple platforms and
+languages, you need to make sure to keep the differences between
+platforms and languages in mind. For example, where one platform
+considers an int as a 16-bit value, others consider it a 32-bit
+value. In your protocol you have to standardize these differences.
 
-Our solution is to make a plain-text protocol with ASCII character encoding, based on HTTP. This is easy to debug, and virtually every platform knows how to interpret ASCII character encoding. Almost all data are strings, except for the price of a room, which is a float. We used the standard ASCII encoding for a float with precision two (that is, a number followed by a full stop character followed by a number in the range of 00 to 99). (For a detailed description of our protocol, see the program documentation for the hotel gateway.)
+Our solution is to make a plain-text protocol with \textsc{ASCII}
+character
+encoding, \textsc{HTTP}-like. This is easy to debug, and virtually every
+platform knows how to interpret \textsc{ASCII} character encoding. Almost all
+data are strings, except for the price of a room, which is a float,
+and the number of available rooms, which is an integer. We
+used the standard \textsc{ASCII} encoding for a float (like the
+\texttt{java.lang.Float.toString(float f)} function
+returns. Integers are represented by their obvious \textsc{ASCII}
+representation.
+
+(For a detailed description of our protocol, see the program
+documentation for the hotel gateway in section \ref{sec:gateway}.) % TODO float description
 
 \paragraph{Question 6}
-The hotelserver obviously runs at the hotel it is serving for. Also the gateway belongs there, since it only serves as a generic means to connect to the hotelserver. The hotelclient belongs to the client that wants to book a room.
+% TODO: we need to give a list of files for each program. maybe
+% consider both runtime and compiletime dependencies...
+The hotelserver obviously runs at the hotel it is serving for. Also
+the gateway belongs there, since it only serves as a generic means to
+connect to the hotelserver. The hotelclient belongs to the client that
+wants to book a room.
 
 \section{Program documentation}
 \subsection{A Paper Storage Server}
@@ -131,7 +220,7 @@ As mentioned earlier it is possible to use different techniques to transfer vari
 
 When a procedure fails, we wanted to send back information telling why something went wrong. Instead of incorporating every bit of data in a structure, we used the more efficient unions.
 
-\subsection{A Hotel Reservation Server}
+\subsection{A Hotel Reservation Server}\label{sec:hotel}
 Our implementation is tested on GNU/Linux using JDK 1.5.0\_06-b5 and JDK 1.5.0\_09-b03.
 
 For the hotel reservation server we have written 9 classes:
@@ -154,7 +243,7 @@ SimpleHotel.java & implementation of the hotel service\\
 This class is used in a Set to send information about which types of rooms still have rooms left, and at which price.
 
 \paragraph{HotelClient.java}
-The program starts by typing ./hotelclient (which is a shell script wrapper around the actual Java program) followed by a number of parameters. How to use the program is printed by omitting the parameters.
+The program starts by typing ./hotelclient (which is a shell script wrapper around the actual \textsc{Java} program) followed by a number of parameters. How to use the program is printed by omitting the parameters.
 
 We have designed HotelClient such that it can run on its own, but also that it can be incorporated in a larger software package that needs the book, details, and list functions. For example, to make a graphical wrapper around it.
 
@@ -194,7 +283,7 @@ guests & "\emph{guest}\textbackslash n", for example, "Guillaume Pierre\textback
 This is the interface for the hotel service running at the hotel reservation server. This interface is needed because it is obligatory to extend the java.rmi.Remote interface.
  
 \paragraph{HotelServer.java}
-The program starts by typing ./hotelserver (which is a shell script wrapper around the actual Java program). Before starting the server the \texttt{rmiregistry} should already be running. However, it is also possible to start your own registry using the \texttt{java.rmi.registry.LocateRegistry} and \texttt{java.rmi.registry.Registry} classes.
+The program starts by typing ./hotelserver (which is a shell script wrapper around the actual \textsc{Java} program). Before starting the server the \texttt{rmiregistry} should already be running. However, it is also possible to start your own registry using the \texttt{java.rmi.registry.LocateRegistry} and \texttt{java.rmi.registry.Registry} classes.
 
 The internal workings are pretty simple. The registry is started, a SimpleHotel (implementation of the Hotel interface) is instantiated and bound in the registry. The registry and SimpleHotel take care of the rest. 
 
@@ -215,7 +304,7 @@ Implementation of the Hotel interface. It generates a couple of room types and t
 
 The bookRoom method (responsible for bookings) is made synchronized in order to support concurrent connections. This will come in handy for the gateway. The other methods do not need to be synchronized since they only \emph{read} data instead of \emph{write}.
 
-\subsection{A Hotel Reservation Gateway}
+\subsection{A Hotel Reservation Gateway}\label{sec:gateway}
 
 Our implementation is tested on GNU/Linux using JDK 1.5.0\_06-b5 and JDK 1.5.0\_09-b03.
 
@@ -229,7 +318,7 @@ hotelgwclient.c & a client program that connects to the gateway via sockets to b
 \end{center}
 
 \paragraph{HotelGateway.java}
-The program starts by typing ./hotelgw (which is a shell script wrapper around the actual Java program). When the program starts it waits for incoming socket connections. Upon accepting a socket connection, a thread is spawned that handles the request further. In the mean time the server goes back to waiting for new incoming connections.
+The program starts by typing ./hotelgw (which is a shell script wrapper around the actual \textsc{Java} program). When the program starts it waits for incoming socket connections. Upon accepting a socket connection, a thread is spawned that handles the request further. In the mean time the server goes back to waiting for new incoming connections.
 
 The thread processes incoming data according to the protocol we specified. When at some point the client fails to follow the protocol an error message is sent back giving some information that indicates what went wrong. When everything is well the thread connects to the Hotel Server using RMI, and invokes the corresponding methods just like the HotelClient.
 

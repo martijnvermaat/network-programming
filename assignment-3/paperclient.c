@@ -19,7 +19,6 @@ void usage_error() {
 
 
 /*
-  TODO: We could add a check for the filename extension (.pdf/.doc).
   TODO: Check XDR structures for NULL pointers, we should not trust rpcgen and
         the server too much.
 */
