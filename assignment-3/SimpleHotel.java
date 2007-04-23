@@ -10,7 +10,7 @@ class SimpleHotel extends UnicastRemoteObject implements Hotel {
     private Set<Room> rooms;
 
 
-    synchronized public void bookRoom(int roomType, String guest)
+    public void bookRoom(int roomType, String guest)
         throws NotAvailableException, RemoteException {
 
         boolean booked = false;
@@ -18,16 +18,27 @@ class SimpleHotel extends UnicastRemoteObject implements Hotel {
         for (Room room : this.rooms) {
 
             if (room.getRoomType().getType() == roomType) {
-                if (room.isAvailable()) {
-                    try {
-                        room.book(guest);
-                        booked = true;
-                        break;
-                    } catch (NotAvailableException e) {
-                        System.err.println(
-                            "HotelImpl exception: available room is booked");
-                    }
+
+                /*
+                  The hack here is that we just try to book the room without
+                  checking if it is available first. Since room.book() is
+                  synchronized, this will just work.
+                  We might get a NotAvailableException, which is kind of
+                  expected behaviour in this code. We just try to book another
+                  room.
+                  In a concurrent environment, whoever is first gets the room.
+                  The set of rooms itself is never modified, so we don't have
+                  to worry about concurrent modifications to this.rooms.
+                */
+
+                try {
+                    room.book(guest);
+                    booked = true;
+                    break;
+                } catch (NotAvailableException e) {
+                    // Try booking the next room
                 }
+
             }
 
         }
@@ -40,22 +51,23 @@ class SimpleHotel extends UnicastRemoteObject implements Hotel {
     }
 
 
-    synchronized public void bookRoom(String guest)
+    public void bookRoom(String guest)
         throws NotAvailableException, RemoteException {
 
         boolean booked = false;
 
         for (Room room : this.rooms) {
 
-            if (room.isAvailable()) {
-                try {
-                    room.book(guest);
-                    booked = true;
-                    break;
-                } catch (NotAvailableException e) {
-                    System.err.println(
-                        "HotelImpl exception: available room is booked");
-                }
+            /*
+              (See the note in bookRoom(int roomType, String guest) above.)
+            */
+
+            try {
+                room.book(guest);
+                booked = true;
+                break;
+            } catch (NotAvailableException e) {
+                // Try booking the next room
             }
 
         }
@@ -100,9 +112,27 @@ class SimpleHotel extends UnicastRemoteObject implements Hotel {
         boolean typeFound;
 
         /*
-          This code is somewhat buggy with threading. However, this is not a
-          big concern in this specific case. The resulting availability
-          snapshot might not represent any specific moment in time.
+          The resulting availability snapshot might not represent any specific
+          moment in time. However, this is not a big concern in this specific
+          case.
+          As an example where the snapshot will be weird, consider the
+          following course of events:
+
+            A SimpleHotel instance with available rooms A and B of different
+            types:
+            - Client X invokes the availableRooms() method and the code loops
+              over rooms A and B in that order.
+            - The isAvailable() method for room A returns true and the
+              availability count for the type of room A is incremented.
+            - Client Y books room A.
+            - Client Y books room B.
+            - The isAvailable() method for room B returns false and the
+              availability count for the type of room A is not incremented.
+            The resulting availability snapshot makes us believe there was a
+            moment in time that room A was available and room B was booked. In
+            reality there was never such a situation.
+
+          We don't mind this behaviour though.
         */
 
         for (Room room : this.rooms) {
@@ -138,10 +168,16 @@ class SimpleHotel extends UnicastRemoteObject implements Hotel {
     public SimpleHotel()
         throws RemoteException {
 
+        /*
+          The HashSet is not synchronized, but this is no problem for
+          SimpleHotel because the set of rooms cannot be modified after the
+          hotel is created.
+        */
         rooms = new HashSet<Room>();
 
-        /* Our hotel must have some rooms */
-
+        /*
+          Our hotel must have some rooms:
+        */
         RoomType presidential = new RoomType(150);
         RoomType honeymoon = new RoomType(120);
         RoomType backpack = new RoomType(100);

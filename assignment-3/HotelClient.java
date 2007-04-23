@@ -42,7 +42,7 @@ public class HotelClient {
 
 
     private static void usageError() {
-        System.out.println("usage: hotelclient list <hostname>"
+        System.out.println("usage: hotelclient list <hostname>");
         System.out.println(
             "       hotelclient book <hostname> [type] <guest>");
         System.out.println("       hotelclient guests <hostname>");

@@ -54,7 +54,7 @@ SimpleHotel_Skel.class SimpleHotel_Stub.class: SimpleHotel.class
 SimpleHotel.class: SimpleHotel.java Hotel.java Room.java RoomType.java Availability.java NotAvailableException.java NotBookedException.java
 	$(JAVAC) SimpleHotel.java
 
-hotelgwclient: hotelgwclient.c
+hotelgwclient: hotelgwclient.c assignment3.h
 	$(CC) $(CFLAGS) -o hotelgwclient hotelgwclient.c
 
 

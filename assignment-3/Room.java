@@ -24,7 +24,7 @@ public class Room {
     }
 
 
-    public void book(String guest) throws NotAvailableException {
+    synchronized public void book(String guest) throws NotAvailableException {
         if (!isAvailable()) {
             throw new NotAvailableException("This room is not available");
         }
