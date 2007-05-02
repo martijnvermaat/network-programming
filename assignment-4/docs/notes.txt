@@ -1,0 +1,2 @@
+- TO DO: Save Mime-Type of paper in paperstorage server.
+- TO DO: Print HTML safe output 
