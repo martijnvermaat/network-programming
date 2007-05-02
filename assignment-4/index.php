@@ -1,22 +1,8 @@
 <?php
-
-include('site.php');
-
-echo '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01//EN"';
-echo ' "http://www.w3.org/TR/html4/strict.dtd">';
-
+include('conference-shared.php');
 ?>
 
-<html lang="en">
-
-<head>
-    <title>Conference Website</title>
-</head>
-
-<body>
-
-
-<h1>Conference Website</h1>
+<?= page_header() ?>
 
 <h2>Paper Storage</h2>
 
@@ -28,7 +14,4 @@ echo ' "http://www.w3.org/TR/html4/strict.dtd">';
 <p><a href="<?= $BASEPHP ?>hotelbook.php">Book a room</a></p>
 <p><a href="<?= $BASEPHP ?>participants.php">Registered participants</a></p>
 
-
-</body>
-
-</html>
+<?= page_footer() ?>
