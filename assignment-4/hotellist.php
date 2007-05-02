@@ -73,7 +73,9 @@ if (count($availabilities) < 1) {
 echo '<dl>';
 foreach ($availabilities as $availability) {
     echo '<dt>Rooms of type '.htmlentities($availability['type']).'</dt>';
-    echo '<dd>'.htmlentities($availability['number']).' rooms available at &euro; '.sprintf('%.2f', $availability['price']).' per room</dd>';
+    echo '<dd>'.htmlentities($availability['number']).' rooms available at &euro; '.sprintf('%.2f', $availability['price']).' per room';
+    echo ' (<a href="'.$BASEPHP.'hotelbook.php?type='.htmlentities(urlencode($availability['type'])).'">book now!</a>)';
+    echo '</dd>';
 }
 echo '</dl>';
 
