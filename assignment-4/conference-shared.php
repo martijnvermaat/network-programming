@@ -78,8 +78,6 @@ function parse_response($response) {
 
 function parse_list_response($response) {
 
-    $response = parse_response($response);
-
     if ($response['status'] != 0) {
         return $response;
     }
@@ -122,5 +120,35 @@ function connect_to_gateway($address, $port) {
 
 }
 
+
+function send_request($socket, $request) {
+
+    $r = $request['procedure']."\n";
+    $r .= implode("\n", $request['parameters'])."\n";
+
+    $total_sent = 0;
+
+    while ($total_sent < strlen($r)) {
+        if (FALSE === ($sent = @socket_write($socket, substr($r, $total_sent)))) {
+            die(error_page("Could not send request to hotel service:\n".socket_strerror(socket_last_error())));
+        }
+        if ($sent == 0) {
+            die(error_page('Could not send request to hotel service'));
+        }
+        $total_sent += $sent;
+    }
+
+    $response = '';
+
+    do {
+        if (FALSE === ($read = @socket_read($socket, 255))) {
+            die(error_page("Could not read response from hotel service:\n".socket_strerror(socket_last_error())));
+        }
+        $response .= $read;
+    } while ($read != '');
+
+    return parse_response($response);
+
+}
 
 ?>

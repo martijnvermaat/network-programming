@@ -20,10 +20,11 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
     $field_type = $_POST['type'];
     $field_name = $_POST['name'];
 
-    $request = "book\n";
+    $request = array('procedure'  => 'book',
+                     'parameters' => array());
 
     if (isset($_POST['type']) && preg_match('/^[a-z0-9_-]+$/i', $_POST['type'])) {
-        $request .= $_POST['type']."\n";
+        $request['parameters'][] = $_POST['type'];
     }
 
     if (!isset($_POST['name']) || strlen($_POST['name']) < 1) {
@@ -38,45 +39,24 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     } else {
 
-        $request .= $_POST['name']."\n\n";
+        $request['parameters'][] = $_POST['name'];
 
         // Send request
 
         $socket = connect_to_gateway($HOTEL_GATEWAY_ADDR, $HOTEL_GATEWAY_PORT);
 
-        $total_sent = 0;
+        $response = send_request($socket, $request);
 
-        while ($total_sent < strlen($request)) {
-            if (FALSE === ($sent = @socket_write($socket, substr($request, $total_sent)))) {
-                die(error_page("Could not send request to hotel service:\n".socket_strerror(socket_last_error())));
-            }
-            if ($sent == 0) {
-                die(error_page('Could not send request to hotel service'));
-            }
-            $total_sent += $sent;
-        }
-
-        $response = '';
-
-        do {
-            if (FALSE === ($read = @socket_read($socket, 255))) {
-                die(error_page("Could not read response from hotel service:\n".socket_strerror(socket_last_error())));
-            }
-            $response .= $read;
-        } while ($read != '');
-
-        $booking = parse_response($response);
-
-        if ($booking['status'] == 0) {
+        if ($response['status'] == 0) {
             echo page_header("Room Booked");
             echo '<h2>Room Booked Successfully</h2>';
             echo '<p>Thank you for your reservation.</p>';
             echo page_footer();
-        } else if ($booking['status'] == 1) {
+        } else if ($response['status'] == 1) {
             $show_form = true;
-            $error = $booking['message'];
+            $error = $response['message'];
         } else {
-            die(error_page("Could not read response from hotel service:\n".$booking['message']));
+            die(error_page("Could not read response from hotel service:\n".$response['message']));
         }
 
     }
@@ -90,27 +70,10 @@ if ($show_form) {
 
     $socket = connect_to_gateway($HOTEL_GATEWAY_ADDR, $HOTEL_GATEWAY_PORT);
 
-    $request = "list\n\n";
-    $total_sent = 0;
+    $request = array('procedure'  => 'list',
+                     'parameters' => array());
 
-    while ($total_sent < strlen($request)) {
-        if (FALSE === ($sent = @socket_write($socket, substr($request, $total_sent)))) {
-            die(error_page("Could not send request to hotel service:\n".socket_strerror(socket_last_error())));
-        }
-        if ($sent == 0) {
-            die(error_page('Could not send request to hotel service'));
-        }
-        $total_sent += $sent;
-    }
-
-    $response = '';
-
-    do {
-        if (FALSE === ($read = @socket_read($socket, 255))) {
-            die(error_page("Could not read response from hotel service:\n".socket_strerror(socket_last_error())));
-        }
-        $response .= $read;
-    } while ($read != '');
+    $response = send_request($socket, $request);
 
     $list = parse_list_response($response);
 

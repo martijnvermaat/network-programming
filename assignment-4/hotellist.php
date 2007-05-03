@@ -7,27 +7,10 @@ include('conference-shared.php');
 
 $socket = connect_to_gateway($HOTEL_GATEWAY_ADDR, $HOTEL_GATEWAY_PORT);
 
-$request = "list\n\n";
-$total_sent = 0;
+$request = array('procedure'  => 'list',
+                 'parameters' => array());
 
-while ($total_sent < strlen($request)) {
-    if (FALSE === ($sent = @socket_write($socket, substr($request, $total_sent)))) {
-        die(error_page("Could not send request to hotel service:\n".socket_strerror(socket_last_error())));
-    }
-    if ($sent == 0) {
-        die(error_page('Could not send request to hotel service'));
-    }
-    $total_sent += $sent;
-}
-
-$response = '';
-
-do {
-    if (FALSE === ($read = @socket_read($socket, 255))) {
-        die(error_page("Could not read response from hotel service:\n".socket_strerror(socket_last_error())));
-    }
-    $response .= $read;
-} while ($read != '');
+$response = send_request($socket, $request);
 
 $list = parse_list_response($response);
 
