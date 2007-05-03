@@ -14,6 +14,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <rpc/rpc.h>
+#include <time.h>
 
 /*
   TODO: Check XDR structures for NULL pointers, we should not trust rpcgen too
@@ -66,16 +67,20 @@ void paper_listing(char *hostname) {
 
 
 int cgiMain() {
+  time_t current_time;
 
   cgiHeaderContentType("text/html");
 
   fprintf(cgiOut, "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n");
   fprintf(cgiOut, "<html lang=\"en\">\n\n<head>\n\t<title>\n\t\tPapers stored at paperserver\n\t</title>\n\n</head>\n\n");
-  fprintf(cgiOut, "<body>\n\n<h2>Stored papers</h2>\n");
+  fprintf(cgiOut, "<body>\n\n<h1>Conference Website</h1><hr><h2>Stored papers</h2>\n");
   
   paper_listing(HOSTNAME);
+
+  time(&current_time);
+
   
-  fprintf(cgiOut, "</body>\n</html>\n");
+  fprintf(cgiOut, "<hr><address>Conference Website - %s</address>\n</body>\n</html>\n", ctime(&current_time));
   return 0;
 }
 

@@ -14,7 +14,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <rpc/rpc.h>
-
+#include <time.h>
 
 void setFileName(int number, char *mimeType) {
   char *p;
@@ -29,23 +29,21 @@ void setFileName(int number, char *mimeType) {
 }
 
 void error_message(char *message) {
+  time_t current_time;
 
+  time(&current_time);
+  fprintf(cgiOut, "Status: 404 Paper not found\r\n");
   cgiHeaderContentType("text/html");
 
   fprintf(cgiOut, "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.org/TR/html4/strict.dtd\">\n");
   fprintf(cgiOut, "<html lang=\"en\">\n\n<head>\n\t<title>\n\t\tPaper fetch error\n\t</title>\n\n</head>\n\n");
-  fprintf(cgiOut, "<body>\n\n<h2>Error fetching paper</h2>\n");
+  fprintf(cgiOut, "<body>\n\n<h1>Conference Website</h1>\n<hr><h2>Error fetching paper</h2>\n");
 
   fprintf(cgiOut, "<p class=\"error\">%s</p>\n\n", message);
 
-  fprintf(cgiOut, "</body>\n</html>\n");
+  fprintf(cgiOut, "<hr><address>Conference Website - %s</address>\n</body>\n</html>\n", ctime(&current_time));
 }
 
-/*
-  TODO: Check XDR structures for NULL pointers, we should not trust rpcgen and
-        the server too much.
-  TODO: Reuse more code of all methods (or just of fetch/details)
-*/
 char *fetch_paper(char *hostname, int number) {
 
   CLIENT *client;
@@ -61,7 +59,6 @@ char *fetch_paper(char *hostname, int number) {
 
   if (client == NULL) {
     snprintf(error, ERROR_STRING_SIZE, "Error connecting to %s", hostname);
-    clnt_pcreateerror("");
     return error;
   }
 
@@ -71,7 +68,6 @@ char *fetch_paper(char *hostname, int number) {
 
   if (out == NULL) {
     snprintf(error, ERROR_STRING_SIZE, "Error querying %s", hostname);
-    clnt_perror(client, "");
     clnt_destroy(client);
     return error;
   }

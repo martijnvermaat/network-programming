@@ -33,7 +33,7 @@ HTML;
 
 
 function page_footer() {
-    $date = date('r');
+    $date = date('D M j G:i:s Y');
     return <<<HTML
 <hr>
 <address>Conference Website - $date</address>

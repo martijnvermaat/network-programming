@@ -1864,7 +1864,7 @@ void cgiHeaderStatus(int status, char *statusMessage) {
 }
 
 void cgiHeaderContentType(char *mimeType) {
-	fprintf(cgiOut, "Content-type: %s\r\n\r\n", mimeType);
+	fprintf(cgiOut, "Content-Type: %s\r\n\r\n", mimeType);
 }
 
 static int cgiWriteString(FILE *out, char *s);
