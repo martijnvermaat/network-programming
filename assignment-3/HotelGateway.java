@@ -17,14 +17,14 @@ import java.io.IOException;
 
 public class HotelGateway {
 
+    private static String DEFAULT_HOSTNAME = "localhost";  // RMI server to connect to
 
     private int PORT = 3242;                // Socket to listen on
-    private String HOSTNAME = "localhost";  // RMI server to connect to
 
     private Hotel hotel;
 
 
-    public HotelGateway() {
+    public HotelGateway(String hostname) {
 
         ServerSocket serverSocket = null;
 
@@ -38,7 +38,7 @@ public class HotelGateway {
         while (true) {
             try {
                 Socket socket = serverSocket.accept();
-                new ClientHandler(socket).start();
+                new ClientHandler(hostname, socket).start();
             } catch (IOException e) {
                 System.err.println("Socket error");
             }
@@ -57,10 +57,12 @@ public class HotelGateway {
         private BufferedReader in;
         private DataOutputStream out;
         private Socket socket;
+        private String hostname;
 
 
-        public ClientHandler(Socket socket) {
+        public ClientHandler(String hostname, Socket socket) {
 
+            this.hostname = hostname;
             this.socket = socket;
 
         }
@@ -151,7 +153,7 @@ public class HotelGateway {
 
             try {
 
-                Hotel hotel = (Hotel) Naming.lookup("rmi://" + HOSTNAME
+                Hotel hotel = (Hotel) Naming.lookup("rmi://" + this.hostname
                                                     + "/HotelService");
                 try {
                     hotel.bookRoom(type, guest);
@@ -163,7 +165,7 @@ public class HotelGateway {
 
             } catch (MalformedURLException e) {
                 sendResponse(response, STATUS_APPLICATION_ERROR,
-                             "Invalid host: " + HOSTNAME);
+                             "Invalid host: " + this.hostname);
                 return;
             } catch (NotBoundException e) {
                 sendResponse(response, STATUS_APPLICATION_ERROR,
@@ -190,7 +192,7 @@ public class HotelGateway {
 
             try {
 
-                Hotel hotel = (Hotel) Naming.lookup("rmi://" + HOSTNAME
+                Hotel hotel = (Hotel) Naming.lookup("rmi://" + this.hostname
                                                     + "/HotelService");
                 try {
                     hotel.bookRoom(guest);
@@ -202,7 +204,7 @@ public class HotelGateway {
 
             } catch (MalformedURLException e) {
                 sendResponse(response, STATUS_APPLICATION_ERROR,
-                             "Invalid host: " + HOSTNAME);
+                             "Invalid host: " + this.hostname);
                 return;
             } catch (NotBoundException e) {
                 sendResponse(response, STATUS_APPLICATION_ERROR,
@@ -230,12 +232,12 @@ public class HotelGateway {
             Set<Availability> availables = null;
 
             try {
-                Hotel hotel = (Hotel) Naming.lookup("rmi://" + HOSTNAME
+                Hotel hotel = (Hotel) Naming.lookup("rmi://" + this.hostname
                                                     + "/HotelService");
                 availables = hotel.availableRooms();
             } catch (MalformedURLException e) {
                 sendResponse(response, STATUS_APPLICATION_ERROR,
-                             "Invalid host: " + HOSTNAME);
+                             "Invalid host: " + this.hostname);
                 return;
             } catch (NotBoundException e) {
                 sendResponse(response, STATUS_APPLICATION_ERROR,
@@ -281,12 +283,12 @@ public class HotelGateway {
             Set<String> registeredGuests = null;
 
             try {
-                Hotel hotel = (Hotel) Naming.lookup("rmi://" + HOSTNAME
+                Hotel hotel = (Hotel) Naming.lookup("rmi://" + this.hostname
                                                     + "/HotelService");
                 registeredGuests = hotel.registeredGuests();
             } catch (MalformedURLException e) {
                 sendResponse(response, STATUS_APPLICATION_ERROR,
-                             "Invalid host: " + HOSTNAME);
+                             "Invalid host: " + this.hostname);
                 return;
             } catch (NotBoundException e) {
                 sendResponse(response, STATUS_APPLICATION_ERROR,
@@ -355,7 +357,13 @@ public class HotelGateway {
 
     public static void main(String[] args) {
 
-        HotelGateway gateway = new HotelGateway();
+        String hostname = DEFAULT_HOSTNAME;
+
+        if (args.length > 0) {
+            hostname = args[0];
+        }
+
+        HotelGateway gateway = new HotelGateway(hostname);
 
     }
 
