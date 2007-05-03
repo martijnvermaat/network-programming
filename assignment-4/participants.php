@@ -43,14 +43,18 @@ echo page_header('Registered Participants');
 echo '<h2>Registered Participants</h2>';
 
 if (count($guests) < 1) {
-    echo '<p>There are no participants registered at this time.</p>';
-}
 
-echo '<ul>';
-foreach ($guests as $guest) {
-    echo '<li>'.htmlentities($guest).'</li>';
+    echo '<p>There are no participants registered at this time.</p>';
+
+} else {
+
+    echo '<ul>';
+    foreach ($guests as $guest) {
+        echo '<li>'.htmlentities($guest).'</li>';
+    }
+    echo '</ul>';
+
 }
-echo '</ul>';
 
 echo page_footer();
 

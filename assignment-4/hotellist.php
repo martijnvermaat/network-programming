@@ -5,30 +5,6 @@
 include('conference-shared.php');
 
 
-function parse_list_response($response) {
-
-    $response = parse_response($response);
-
-    if ($response['status'] != 0) {
-        return $response;
-    }
-
-    for ($i = 0; $i < count($response['content']); $i++) {
-        if (!sscanf($response['content'][$i], "%s %f %i", $type, $price, $number)) {
-            $response['status'] = 2;
-            $response['message'] = 'Malformed response';
-            break;
-        }
-        $response['content'][$i] = array('type'   => $type,
-                                         'price'  => $price,
-                                         'number' => $number);
-    }
-
-    return $response;
-
-}
-
-
 $socket = connect_to_gateway($HOTEL_GATEWAY_ADDR, $HOTEL_GATEWAY_PORT);
 
 $request = "list\n\n";
@@ -67,17 +43,21 @@ echo page_header('Available Rooms');
 echo '<h2>Available Rooms</h2>';
 
 if (count($availabilities) < 1) {
-    echo '<p>Unfortunately, there are no rooms available at this time.</p>';
-}
 
-echo '<dl>';
-foreach ($availabilities as $availability) {
-    echo '<dt>Rooms of type '.htmlentities($availability['type']).'</dt>';
-    echo '<dd>'.htmlentities($availability['number']).' rooms available at &euro; '.sprintf('%.2f', $availability['price']).' per room';
-    echo ' (<a href="'.$BASEPHP.'hotelbook.php?type='.htmlentities(urlencode($availability['type'])).'">book now!</a>)';
-    echo '</dd>';
+    echo '<p>Unfortunately, there are no rooms available at this time.</p>';
+
+} else {
+
+    echo '<dl>';
+    foreach ($availabilities as $availability) {
+        echo '<dt>Rooms of type '.htmlentities($availability['type']).'</dt>';
+        echo '<dd>'.htmlentities($availability['number']).' rooms available at &euro; '.sprintf('%.2f', $availability['price']).' per room';
+        echo ' (<a href="'.$BASEPHP.'hotelbook.php?type='.htmlentities(urlencode($availability['type'])).'">book now!</a>)';
+        echo '</dd>';
+    }
+    echo '</dl>';
+
 }
-echo '</dl>';
 
 echo page_footer();
 

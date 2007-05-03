@@ -76,6 +76,30 @@ function parse_response($response) {
 }
 
 
+function parse_list_response($response) {
+
+    $response = parse_response($response);
+
+    if ($response['status'] != 0) {
+        return $response;
+    }
+
+    for ($i = 0; $i < count($response['content']); $i++) {
+        if (!sscanf($response['content'][$i], "%s %f %i", $type, $price, $number)) {
+            $response['status'] = 2;
+            $response['message'] = 'Malformed response';
+            break;
+        }
+        $response['content'][$i] = array('type'   => $type,
+                                         'price'  => $price,
+                                         'number' => $number);
+    }
+
+    return $response;
+
+}
+
+
 function connect_to_gateway($address, $port) {
 
     if (FALSE === ($socket = @socket_create(AF_INET, SOCK_STREAM, SOL_TCP))) {
