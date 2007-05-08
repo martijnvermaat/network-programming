@@ -6,7 +6,8 @@ include('conference-shared.php');
 
 <h2>Paper Storage</h2>
 
-<p><a href="<?= $BASECGI ?>papers.cgi">Stored papers</a></p>
+<p><a href="<?= $BASECGI ?>papers.cgi">List and retrieve papers</a></p>
+<p><a href="<?= $BASECGI ?>paperload.cgi">Store a paper</a></p>
 
 <h2>Hotel Reservation</h2>
 
