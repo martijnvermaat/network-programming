@@ -21,13 +21,40 @@
 
 \section{Conference Web site}
 \paragraph{Question 1}
+We implemented our \textsc{CGI} files in C, the main reason being that
+communication with the paper storage server has to be done through \textsc{Sun RPC}
+and C is the language with the main \textsc{Sun RPC} support.
+
+Another language frequently used for \textsc{CGI} programming is Perl,
+probably because it is very good at manipulating strings and does not have to
+be compiled. We briefly considered using Perl with an \texttt{rpcgen}
+implementation for Perl or calls directly to C functions (for
+example by using the \texttt{Inline::C} package). Our experience with Perl
+however is limited and we decided the possible advantage would not be worth the
+efforts of getting any of the above methods to work.
 
 \paragraph{Question 2}
+The paper storage server has to be accessed through \textsc{Sun RPC}, so this has
+to be possible with the language we use. We are not aware of a \texttt{rpcgen}
+implementation generating PHP code and talking directly with a \textsc{Sun RPC}
+server using PHP socket seems a pointless and time-consuming excercise. The
+other option would be to talk to the paper storage server using a different language
+and embedding these calls in the PHP code somehow (e.g. by writing a PHP
+extension, or executing a compiled C program. This would require some work.
+
+On the other hand, \textsc{CGI} files can be implemented using any language, so in
+that case it is easy to pick a language from which we can communicate with the
+paper storage server. However, this does not mean \textsc{CGI} is the only way to
+deal with this. There are Apache modules for many languages that allow to
+execute a piece of code in such a language whenever a request comes in.
 
 \paragraph{Question 3}
+Thomas? :-)
 
 \section{Hotel reservations}
 \paragraph{Question 4}
+It would have been possible to implement the hotel reservation pages in any language
+that supports socket programming.
 
 \section{Program documentation}
 \subsection{Conference Web site}
