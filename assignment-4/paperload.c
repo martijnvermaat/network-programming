@@ -1,12 +1,5 @@
-#ifdef WIN32
-#define SAVED_ENVIRONMENT "c:\\cgicsave.env"
-#else
-#define SAVED_ENVIRONMENT "/tmp/cgicsave.env"
-#endif /* WIN32 */
-
 #include "assignment4.h"
 #include "paperstorage.h"
-#include "cgic.h"
 #include <string.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -16,9 +9,132 @@
 #include <rpc/rpc.h>
 #include <time.h>
 
+struct fd_input {
+    char *name;
+    char *value;
+    struct fd_input *next;
+};
+typedef struct fd_input form_data_input;
+
+struct fd_input_file {
+    char *name;
+    char *filename;
+    char *contents;
+    int size;
+    char *mime;
+    struct fd_input_file *next;
+};
+typedef struct fd_input_file form_data_file;
+
+char *boundary;
+form_data_input *form_input;
+form_data_file *files;
+
+
+char *unquote(char *quoted) {
+    *(quoted + strlen(quoted) - 1) = 0; // chop off last quote;
+    return (quoted + 1);
+}
+
+char *plustospace(char *plus) {
+    int i;
+    for (i = 0; i < strlen(plus); i++) {
+        if (plus[i] == '+') {
+            plus[i] = ' ';
+        }
+    }
+    return plus;
+}
+
+char *sanitize(char *san) {
+    int i;
+    
+    // remove trailing spaces
+    for (i = strlen(san); i >= 0; i--) {
+        if (*(san + i) == ' ' || *(san + i) == '\r' || *(san + i) == '\n') {
+            *(san + i) = 0;
+        }
+    }
+
+    // remove quotes
+    return unquote(san);
+}
+
+char *read_line(int fd, int *result) {
+
+    char *buffer;
+    int buffer_size;
+    char *p;
+    int bytes_read;
+
+    char character;
+    int length = 0;
+
+    buffer = malloc(READ_BUFFER_SIZE);
+
+    if (buffer == NULL) {
+        printf("Could not allocate needed memory\n");
+        exit(EXIT_FAILURE);
+    }
+
+    buffer_size = READ_BUFFER_SIZE;
+    p = buffer;
+
+    while (1) {
+
+        bytes_read = read(fd, &character, 1);
+        if (bytes_read == -1) {
+            printf("Read error");
+            exit(EXIT_FAILURE);
+        }
+
+        if (bytes_read == 0) {
+            if (length > 0) { // we have a string to return
+                *p = '\0';
+            } else { // no string, return null
+                free(buffer);
+                *result = 0;
+                buffer = NULL;
+            }
+            break;
+        }
+
+        if (character == '\n') {
+            *p = '\n';
+            p++;
+            *p = '\0';
+            length++;
+            break;
+        }
+        /*
+          If character == '\0' we read more than we process, but that's not
+          too bad I guess.
+        */
+
+        *p = character; // put character in buffer
+        p++;
+        length++;
+
+        // check if we need to resize the buffer
+        if (length >= buffer_size - 1) {
+            buffer_size += READ_BUFFER_SIZE;
+            buffer = realloc(buffer, buffer_size);
+            if (buffer == NULL) {
+                perror("Unable to allocate necessary memory");
+                exit(EXIT_FAILURE);
+            }
+            p = buffer + length;
+        }
+
+    }
+    *result = length;
+    return buffer;
+
+}
+
 void error_message(char *message) {
-    fprintf(cgiOut, "<h3>Error uploading paper</h3>\n");
-    fprintf(cgiOut, "<p class=\"error\">%s</p>\n\n", message);
+    printf("<h3>Error uploading paper</h3>\n");
+    printf("<p class=\"error\">%s</p>\n\n", message);
 }
 
 int add_paper(char *hostname, char *author, 
@@ -97,129 +213,304 @@ int add_paper(char *hostname, char *author,
 }
 
 void show_form(void) {
-    fprintf(cgiOut,"<form id=\"uploadpaper\" method=\"post\" action=\"paperload.cgi\" enctype=\"multipart/form-data\">\n");
-    fprintf(cgiOut, "\t<label for=\"file\">Paper:</lable>\n");
-    fprintf(cgiOut, "\t<input type=\"file\" name=\"file\" id=\"file\">\n");
+    printf("<form id=\"uploadpaper\" method=\"post\" action=\"paperload.cgi\" enctype=\"multipart/form-data\">\n");
+    printf("\t<label for=\"file\">Paper:</lable>\n");
+    printf("\t<input type=\"file\" name=\"file\" id=\"file\">\n");
     
-    fprintf(cgiOut, "<br>");
+    printf("<br>");
     
-    fprintf(cgiOut, "\t<label for=\"author\">Author:</lable>\n");
-    fprintf(cgiOut, "\t<input type=\"text\" maxlength=\"255\" name=\"author\" id=\"author\">\n");
+    printf("\t<label for=\"author\">Author:</lable>\n");
+    printf("\t<input type=\"text\" maxlength=\"254\" name=\"author\" id=\"author\">\n");
     
-    fprintf(cgiOut, "<br>");
+    printf("<br>");
     
-    fprintf(cgiOut, "\t<label for=\"title\">Paper title:</lable>\n");
-    fprintf(cgiOut, "\t<input type=\"text\" maxlength=\"255\" name=\"title\" id=\"title\">\n");
+    printf("\t<label for=\"title\">Paper title:</lable>\n");
+    printf("\t<input type=\"text\" maxlength=\"254\" name=\"title\" id=\"title\">\n");
     
-    fprintf(cgiOut, "<br>");
-    
-    fprintf(cgiOut, "<input type=\"submit\" value=\"Upload paper\">\n");
-    
-    fprintf(cgiOut, "</form>\n");
+    printf("<br>");
+    printf("<input type=\"submit\" value=\"Upload paper\">\n");
+    printf("</form>\n");
 }
-
-
-void handle_upload(char *filename) {
-    char author[MAX_AUTHOR_LENGTH];
-    char title[MAX_TITLE_LENGTH];
-    char *buffer, *add_result;
-    int filesize = 0, read_bytes = 0;
-    cgiFilePtr file;
-    add_result = malloc(ERROR_STRING_SIZE);
-    
-    if(cgiFormFileSize("file", &filesize) != cgiFormSuccess) {
-        error_message("Error determining file size - unable to store paper");
-        return;
-    }
-    
-    buffer = malloc(filesize * sizeof(char));
-    if (buffer == NULL) {
-        error_message("Unable to allocate necessary memory");
-        return;
-    }
-    
-    if (cgiFormFileOpen("file", &file) != cgiFormSuccess) {
-        error_message("Could not process paper (1)");
-        return;
-    }
-    
-    if (cgiFormFileRead(file, buffer,filesize,&read_bytes) != cgiFormSuccess) {
-        error_message("Could not process paper (2)");
-        return;
-    }
-    
-    if (cgiFormFileClose(file) != cgiFormSuccess) {
-        error_message("Could not process paper (3)");
-        return;
-    }
-    
-    if (cgiFormString("author", author,MAX_AUTHOR_LENGTH) == cgiFormNotFound) {
-        error_message("Omitted author");
-        return;
-    }
-    
-    if (cgiFormString("author",author,MAX_AUTHOR_LENGTH) == cgiFormTruncated) {
-        error_message("Author size too large");
-        return;
-    }
-    
-    if(strlen(author) == 0) {
-        error_message("Omitted author");
-        return;
-    }
-    
-    if (cgiFormString("title", title, MAX_TITLE_LENGTH) == cgiFormNotFound) {
-        error_message("Omitted paper title");
-        return;
-    }
-    
-    if (cgiFormString("title", title, MAX_TITLE_LENGTH) == cgiFormTruncated) {
-        error_message("Paper title too large");
-        return;
-    }
-    
-    if(strlen(title) == 0) {
-        error_message("Omitted title");
-        return;
-    }
-    
-    if (add_paper(HOSTNAME, author, title, filename, buffer,
-                  filesize, add_result) == -1) {
-        error_message(add_result);
-    } else {
-        fprintf(cgiOut, "<p>Added paper %s.</p>\n", add_result);
-    }
-    free(add_result);
-    free(buffer);
-}
-
-int cgiMain() {
-    time_t current_time;
-    char filename[255];
-    cgiHeaderContentType("text/html");
-    cgiFormResultType form_result;
-    
-    fprintf(cgiOut, "<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.o\rg/TR/html4/strict.dtd\">\n");
-    fprintf(cgiOut, "<html lang=\"en\">\n\n<head>\n\t<title>\n\t\tConference Website - Upload a paper\n\t</title>\n\n</head>\n\n");
-    fprintf(cgiOut, "<body>\n\n<h1>Conference Website</h1><hr><h2>Upload a paper</h2>\n");
-    
-    form_result = (cgiFormFileName("file", filename, sizeof(filename)));
-    
-    if(form_result == cgiFormSuccess) {
-        handle_upload(filename);
-    } else if(form_result == cgiFormTruncated) {
-        fprintf(cgiOut, "<p class=\"error\">Filename length too large, so file type cannot be determined. Assuming .doc.</p>\n");
-        handle_upload(filename);
-    }
-    
-    show_form();
-    
-    time(&current_time);
-    
-    fprintf(cgiOut, "<hr><address>Conference Website - %s</address>\n", ctime(&current_time));
-    fprintf(cgiOut, "</body>\n</html>\n");
-    
-    return 0;
-}
-
+ 
+ void read_file_contents(form_data_file *current, char *name, char* file, char *mime) {
+     form_data_file *temp;
+     char *buffer, *line;
+     int size = 0, readbytes = 0;
+     
+     temp =  malloc(sizeof(form_data_file));
+     buffer = malloc(sizeof(char));
+     current->name = malloc(strlen(name));
+     current->filename = malloc(strlen(file));
+     current->mime = malloc(strlen(mime));
+     
+     if(temp == NULL || buffer == NULL || current->name == NULL ||
+        current->filename == NULL || current->mime == NULL ) {
+         printf("Could not allocate needed memory\n");
+         exit(EXIT_FAILURE);
+     }
+     
+     strcpy(current->name, name);
+     strcpy(current->filename, file);
+     strcpy(current->mime, mime);
+     
+     line = read_line(STDIN_FILENO, &readbytes);
+     if(line != NULL) {
+         free(line); // blank line
+     }
+     
+     while ((line = read_line(STDIN_FILENO, &readbytes)) != NULL) {
+         if(strstr(line, boundary) != NULL) { // at boundary?
+             free(line);
+             *(buffer + size - 1) = 0; // remove last newline 
+             current->contents = buffer;
+             current->size = size - 2;
+             current->next = temp;
+             return;
+         }
+         
+         buffer = realloc(buffer, size + readbytes); // resize buffer
+         if(buffer == NULL) {
+             printf("Could not allocate needed memory\n");
+         }
+         memcpy(buffer + size, line, readbytes); // copy string
+         size += readbytes; // adjust size administration
+         free(line); 
+     }
+ }
+ 
+ void read_input_contents(form_data_input *current, char *name) {
+     form_data_input *temp;
+     char *buffer, *line;
+     int size = 0, readbytes = 0;
+     temp =  malloc(sizeof(form_data_input));
+     buffer = malloc(sizeof(char));
+     current->name = malloc(strlen(name));
+     
+     if(temp == NULL || buffer == NULL || current->name == NULL) {
+         printf("Could not allocate needed memory\n");
+         exit(EXIT_FAILURE);
+     }
+     
+     strcpy(current->name, name);
+     
+     line = read_line(STDIN_FILENO, &readbytes);
+     if(line != NULL) {
+         free(line); // blank line
+     }
+     
+     while ((line = read_line(STDIN_FILENO, &readbytes)) != NULL) {
+         if(strstr(line, boundary) != NULL) { // at boundary?
+             free(line);
+             *(buffer+size-2) = 0; // chop off \r\n
+             current->value = buffer;
+             current->next = temp;
+             return;
+         }
+         
+         buffer = realloc(buffer, size + readbytes + 1); // resize buffer
+         if(buffer == NULL) {
+             printf("Could not allocate needed memory\n");
+             exit(EXIT_FAILURE);
+         }
+ 
+         memcpy(buffer + size, line, readbytes); // copy string
+         *(buffer + size + readbytes) =  0; // make sure it ends with \0
+         size += readbytes; // adjust size administration
+         free(line); 
+     }
+ }   
+ 
+ void read_boundary() {
+     char *line;
+     int readbytes = 0;
+     while((line = read_line(STDIN_FILENO, &readbytes)) != NULL) {
+         if(strstr(line, boundary) != NULL ) { //boundary found
+             free(line);
+             return;
+         }
+         free(line);
+     }
+ }
+ 
+ int get_var_file(const char *varname, char **filename, char **buffer,
+                 char **mime, int *size) {
+     form_data_file *current = files;
+     while((current->name) != NULL) {
+         if(!strcmp(current->name, varname)) {
+             if(current->size == 0) {
+                 return -1;
+             }
+             *filename = current->filename;
+             *buffer = current->contents;
+             *size = current->size;
+             *mime = current->mime;
+             return 0;
+         }
+     }
+     return -1;
+ }
+ 
+ int get_var_input(const char *varname, char *dest, int max_size) {
+     form_data_input *current = form_input;
+     
+     while (current->name != NULL) {
+         if (!strcmp(current->name, varname)) {
+             if (strlen(current->value) == 0) {
+                 return -1;
+             } else if (strlen(current->value) > max_size) {
+                 return -2;
+             } else {
+                 strcpy(dest, current->value);
+                 return 0;
+             }
+         }
+         current = current->next;
+     }
+     return -1;
+ }
+ 
+ void process_post_query(void) {
+     char *type, *line;
+     int readbytes = 0;
+     form_data_input *fi_current = form_input;
+     form_data_file *files_current = files;
+     
+     type = getenv("CONTENT_TYPE");
+     
+     if(strcmp(strtok(type,";"), "multipart/form-data")) {
+         error_message("Sorry, we can only deal with multipart/form-data.");
+         return;
+     }
+     
+     /* retrieve boundary */
+     boundary = strtok(NULL, ";"); // " boundary=----123"
+     boundary = strtok(boundary, "="); // " boundary"
+     boundary = strtok(NULL, "="); // "----123"
+     
+     /* Since POST data has to be read from stdin, we have only one chance of 
+        getting all data. So we'll go over it once saving everything we come
+        across */
+     
+     read_boundary();
+     
+     while((line = read_line(STDIN_FILENO, &readbytes)) != NULL) {
+         char *name;
+         char *filename;
+         char *mime;
+         
+         if(strstr(line, "Content-Disposition: form-data; ") == NULL) {
+             // expected form data
+             free(line);
+             read_boundary();
+             continue;
+         }
+         
+         // "Content-Dis... name=inputname; filename=filename.ext"
+         strtok(line, "="); // "Content-Dis... name"
+         name = strtok(NULL, "="); // "inputname; filename=filename.ext";
+         
+         if (strstr(name, ";") != NULL) { // ah, we're dealing with a file
+             // fetch filename and mime type
+             char *magicwand;
+             
+             magicwand = strstr(name, ";");
+             if(magicwand != NULL) {
+                 *magicwand = 0;
+             }
+             
+             // " filename=filename.ext"
+             filename = strtok(NULL, "="); // "filename.ext"
+             
+             line = read_line(STDIN_FILENO, &readbytes); // need to get mime type
+             if(line == NULL || strstr(line, "Content-Type: ") == NULL) {
+                 // expected mime type
+                 free(line);
+                 read_boundary();
+                 continue;
+             }
+             
+             // "Content-Type: mime/type"
+             strtok(line, ": "); // "Content-Type"
+             mime = strtok(NULL, ": "); // "mime/type"
+             
+             magicwand = strstr(mime, "\r"); // chop off trailing newlines
+             if(magicwand != NULL ) { 
+                 *magicwand = 0;
+             }
+             
+             read_file_contents(files_current, sanitize(name), sanitize(filename), mime);
+             files_current = files_current->next;
+         } else {
+             read_input_contents(fi_current, sanitize(name));
+             fi_current = fi_current->next;
+         }
+         free(line);
+     }
+ }
+ 
+ void handle_upload(void) {
+     char author[MAX_AUTHOR_LENGTH], title[MAX_TITLE_LENGTH];
+     char *filename, *filecontents, *mime, *add_result;
+     int size;  
+     
+     form_input = malloc(sizeof(form_data_input));
+     files = malloc(sizeof(form_data_file));
+     add_result = malloc(ERROR_STRING_SIZE);
+     
+     if(form_input == NULL || files == NULL || add_result == NULL) {
+         printf("Could not allocate needed memory\n");
+         exit(EXIT_FAILURE);
+     }
+     
+     process_post_query();
+     
+     switch(get_var_file("file", &filename, &filecontents, &mime, &size)) {
+     case -1: error_message("You didn't send a paper"); return;
+     default: break; // all is well
+     }
+     
+     switch(get_var_input("author", author, MAX_AUTHOR_LENGTH - 1)) {
+     case -1: error_message("Omitted author"); return;
+     case -2: error_message("Author length too large"); return;
+     default: break; // all is well
+     }
+     
+     switch(get_var_input("title", title, MAX_TITLE_LENGTH - 1)) {
+     case -1: error_message("Omitted title"); return;
+     case -2: error_message("Title length too large"); return;
+     default: break; // all is well
+     }
+     
+     if (add_paper(HOSTNAME, author, title, files->filename, files->contents,
+                   files->size, add_result) == -1) {
+         error_message(add_result);
+     } else {
+         printf("<p>Added paper %s.</p>\n", add_result);
+     }
+     
+     free(add_result);
+ }
+ 
+ int main(int argc, char **argv) {
+     time_t current_time;
+     
+     printf("Content-Type: text/html\r\n\r\n");
+     
+     printf("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.01//EN\" \"http://www.w3.o\rg/TR/html4/strict.dtd\">\n");
+     printf("<html lang=\"en\">\n\n<head>\n\t<title>\n\t\tConference Website - Upload a paper\n\t</title>\n\n</head>\n\n");
+     printf("<body>\n\n<h1>Conference Website</h1><hr><h2>Upload a paper</h2>\n");
+     
+     if(!strcmp(getenv("REQUEST_METHOD"), "POST")) {
+         handle_upload();
+     }
+     
+     show_form();
+     
+     time(&current_time);
+     
+     printf("<hr><address>Conference Website - %s</address>\n", ctime(&current_time));
+     printf("</body>\n</html>\n");
+     
+     return(EXIT_SUCCESS);
+ }
 

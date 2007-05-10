@@ -49,7 +49,10 @@ deal with this. There are Apache modules for many languages that allow to
 execute a piece of code in such a language whenever a request comes in.
 
 \paragraph{Question 3}
-Thomas? :-)
+We implemented the upload page using a form and a \textsc{POST} request. In general,
+\textsc{GET} requests should be used for pages which are idem potent, where 
+\textsc{POST} should be used for page which are not. For example, pages showing
+information such as \texttt{papers.cgi} and \texttt{paperview.cgi} are idem potent.
 
 \section{Hotel reservations}
 \paragraph{Question 4}
@@ -58,6 +61,38 @@ that supports socket programming.
 
 \section{Program documentation}
 \subsection{Conference Web site}
+For the Conference Website we have written 3 CGI pages:
+\begin{center}
+% use packages: array
+\begin{tabular}{ l | p{9cm} }
+papers.c & a A page that shows the available papers\\ \hline
+paperview.c & A page that makes it possible to download papers\\ \hline
+paperload.c & A page that provides a form to upload papers\\
+\end{tabular}
+\end{center}
+
+\paragraph{papers.c}
+This program connects to the (local) paperstorage server and executes a \texttt{list}
+command in order to retrieve the list of stored papers. It presents them the same way
+as our paperclient of the previous assignment, with the addition of making the titles
+of the papers hyperlinks to paperview.cgi so one can download the papers.
+
+\paragraph{paperview.c}
+This program connects to the (local) paperstorage server and executes a \texttt{fetch}
+command in order to retrieve a specific paper. This file is sent to the browser with
+the proper mime type, so the browser can decide how to view the file (or provide a
+means to save it somewhere). Which paper it retrieves depends on the \textit{paper}
+variable which should be sent along with the \textsc{GET} request. If one designates
+a non-existing paper, or omits sending the \textit{paper} variable, an error page is
+shown.
+
+\paragraph{paperload.c}
+This program provides a form where one can fill out author name, paper title, and
+select a local file to send to the paperstorage server. By pressing the
+\textit{Upload paper} button the paper and other data will be send to the paperstorage
+server using a \textsc{POST} request. When all data is present a connection to the
+(local) paperstorage server is made, and an \texttt{add} command is executed. If
+something goes wrong an error message is shown.
 
 \subsection{Hotel reservations}
 

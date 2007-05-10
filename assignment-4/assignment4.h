@@ -12,5 +12,7 @@
 
 #define ERROR_STRING_SIZE 128
 #define HOSTNAME "localhost"
+#define REQUEST_SIZE 10
+#define READ_BUFFER_SIZE 20
 
 #endif
