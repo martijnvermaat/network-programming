@@ -51,8 +51,14 @@ execute a piece of code in such a language whenever a request comes in.
 \paragraph{Question 3}
 We implemented the upload page using a form and a \textsc{POST} request. In general,
 \textsc{GET} requests should be used for pages which are idem potent, where 
-\textsc{POST} should be used for page which are not. For example, pages showing
+\textsc{POST} should be used for pages which are not. For example, pages showing
 information such as \texttt{papers.cgi} and \texttt{paperview.cgi} are idem potent.
+Also, sometimes forms contain private data. Browsers keep \textsc{POST} requests
+out of their history file.
+
+Using \textsc{POST} and \textsc{GET} requests are the only methods of sending data
+from the client to the server using a WWW browser. When sending form input, you
+should in general use \textsc{POST} requests.
 
 \section{Hotel reservations}
 \paragraph{Question 4}
@@ -86,6 +92,10 @@ variable which should be sent along with the \textsc{GET} request. If one design
 a non-existing paper, or omits sending the \textit{paper} variable, an error page is
 shown.
 
+Data sent using a \textsc{GET} request is provided to a CGI program in the environment
+variable \textsc{QUERY_STRING}. The contents of this variable is URL encoded, and should
+therefore be decoded first.
+
 \paragraph{paperload.c}
 This program provides a form where one can fill out author name, paper title, and
 select a local file to send to the paperstorage server. By pressing the
@@ -93,6 +103,10 @@ select a local file to send to the paperstorage server. By pressing the
 server using a \textsc{POST} request. When all data is present a connection to the
 (local) paperstorage server is made, and an \texttt{add} command is executed. If
 something goes wrong an error message is shown.
+
+Data sent using a \textsc{POST} request is provided to a CGI program on the standard
+input in a format described by RFC 1867. This program checks if a \textsc{POST} request
+is done, and parses the standard input accordingly.
 
 \subsection{Hotel reservations}
 
