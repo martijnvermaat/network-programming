@@ -93,7 +93,7 @@ char *fetch_paper(char *hostname, int number) {
     get_in in;
     get_out *out;
     char *error;
-    char *mime_type = "application/pdf";
+    char *mime_type;
     
     error = malloc(ERROR_STRING_SIZE * sizeof(char));
     
@@ -120,9 +120,11 @@ char *fetch_paper(char *hostname, int number) {
         clnt_destroy(client);
         return error;
     }
+
+    mime_type = out->get_out_u.paper.type;
     
     set_file_name(number, mime_type);
-    printf("Content-Type: %s\r\n\r\n",mime_type);
+    printf("Content-Type: %s\r\n\r\n", mime_type);
     if (fwrite(out->get_out_u.paper.content->data_val,
                out->get_out_u.paper.content->data_len, 1, stdout) != 1) {
         clnt_destroy(client);

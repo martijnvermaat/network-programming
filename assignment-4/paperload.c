@@ -139,12 +139,12 @@ void error_message(char *message) {
 
 int add_paper(char *hostname, char *author, 
               char *title, char *filename, char* buffer, 
-              int size, char *result) {
+              int size, char* mime, char *result) {
     
     CLIENT *client;
     add_in in;
     add_out *out;
-    char *p;
+    char *extension;
     
     if (strlen(author) > MAX_AUTHOR_LENGTH) {
         snprintf(result, ERROR_STRING_SIZE, 
@@ -158,8 +158,8 @@ int add_paper(char *hostname, char *author,
         return -1;
     }
     
-    p = strrchr(filename, '.');
-    if (p == NULL || !(!strcmp(p+1, "pdf") || !strcmp(p+1, "doc"))) {
+    extension = strrchr(filename, '.');
+    if (extension == NULL || !(!strcmp(extension + 1, "pdf") || !strcmp(extension + 1, "doc"))) {
         snprintf(result, ERROR_STRING_SIZE, 
                  "Paper must have pdf or doc file extension\n");
         return -1;
@@ -182,6 +182,7 @@ int add_paper(char *hostname, char *author,
     memcpy(in.paper.content->data_val, buffer, size);
     in.paper.author = author;
     in.paper.title = title;
+    in.paper.type = mime;
     client = clnt_create(hostname, PAPERSTORAGE_PROG, PAPERSTORAGE_VERS,"tcp");
     
     if (client == NULL) {
@@ -468,6 +469,11 @@ void show_form(void) {
      case -1: error_message("You didn't send a paper"); return;
      default: break; // all is well
      }
+
+     if (strlen(mime) > MAX_TYPE_LENGTH) {
+         error_message("Mimetype too large");
+         return;
+     }
      
      switch(get_var_input("author", author, MAX_AUTHOR_LENGTH - 1)) {
      case -1: error_message("Omitted author"); return;
@@ -482,7 +488,7 @@ void show_form(void) {
      }
      
      if (add_paper(HOSTNAME, author, title, files->filename, files->contents,
-                   files->size, add_result) == -1) {
+                   files->size, mime, add_result) == -1) {
          error_message(add_result);
      } else {
          printf("<p>Added paper %s.</p>\n", add_result);
