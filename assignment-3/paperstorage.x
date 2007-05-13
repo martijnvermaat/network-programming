@@ -5,6 +5,7 @@
 
 const MAX_AUTHOR_LENGTH  = 255;
 const MAX_TITLE_LENGTH   = 255;
+const MAX_TYPE_LENGTH    = 255;
 const MAX_MESSAGE_LENGTH = 255;
 
 
@@ -26,6 +27,7 @@ struct document {
     int    *number                       ;
     string  author   <MAX_AUTHOR_LENGTH> ;
     string  title    <MAX_TITLE_LENGTH>  ;
+    string  type     <MAX_TYPE_LENGTH>   ;
     data   *content                      ;
 };
 

@@ -12,10 +12,12 @@
 /*
   The paper number is implicit in the location of the paper in the buffer
   because we number them successively and never remove one.
+  TODO: shouldn't we reuse MAX_AUTHOR_LENGTH etc here?
 */
 struct paper_t {
     char author[256];
     char title[256];
+    char type[256];
     int size;
     char *data;
 };
@@ -77,6 +79,7 @@ add_out *add_proc_1_svc(add_in *in, struct svc_req *rqstp) {
 
     strcpy(paper->author, in->paper.author);
     strcpy(paper->title, in->paper.title);
+    strcpy(paper->type, in->paper.type);
 
     paper->size = in->paper.content->data_len;
     memcpy(paper->data,
@@ -117,9 +120,16 @@ add_out *add_proc_1_svc(add_in *in, struct svc_req *rqstp) {
         perror("Unable to allocate necessary memory");
         exit(EXIT_FAILURE);
     }
+    out.add_out_u.paper.type =
+        malloc(strlen(papers[papers_count - 1]->type) +1);
+    if (out.add_out_u.paper.type == NULL) {
+        perror("Unable to allocate necessary memory");
+        exit(EXIT_FAILURE);
+    }
 
     strcpy(out.add_out_u.paper.author, papers[papers_count - 1]->author);
     strcpy(out.add_out_u.paper.title, papers[papers_count - 1]->title);
+    strcpy(out.add_out_u.paper.type, papers[papers_count - 1]->type);
 
     return &out;
 
@@ -169,9 +179,16 @@ get_out *get_proc_1_svc(get_in *in, struct svc_req *rqstp) {
         perror("Unable to allocate necessary memory");
         exit(EXIT_FAILURE);
     }
+    out.get_out_u.paper.type =
+        malloc(strlen(papers[in->number - 1]->type) + 1);
+    if (out.get_out_u.paper.type == NULL) {
+        perror("Unable to allocate necessary memory");
+        exit(EXIT_FAILURE);
+    }
 
     strcpy(out.get_out_u.paper.author, papers[in->number - 1]->author);
     strcpy(out.get_out_u.paper.title, papers[in->number - 1]->title);
+    strcpy(out.get_out_u.paper.type, papers[in->number - 1]->type);
 
     // Only send the entire document if explicitly asked for
     if (in->representation == DETAILED) {
@@ -247,9 +264,15 @@ list_out *list_proc_1_svc(void *in, struct svc_req *rqstp) {
             perror("Unable to allocate necessary memory");
             exit(EXIT_FAILURE);
         }
+        paper_list->item.type = malloc(strlen(papers[i]->type) + 1);
+        if (paper_list->item.type == NULL) {
+            perror("Unable to allocate necessary memory");
+            exit(EXIT_FAILURE);
+        }
 
         strcpy(paper_list->item.author, papers[i]->author);
         strcpy(paper_list->item.title, papers[i]->title);
+        strcpy(paper_list->item.type, papers[i]->type);
 
         // Don't send the entire document
         paper_list->item.content = NULL;

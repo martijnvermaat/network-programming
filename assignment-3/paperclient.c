@@ -8,6 +8,10 @@
 #include <rpc/rpc.h>
 
 
+#define MIME_TYPE_PDF "application/pdf"
+#define MIME_TYPE_DOC "application/msword"
+
+
 void usage_error() {
     printf("Usage: paperclient add <hostname> <author> <title>");
     printf(" <filename.{pdf|doc}>\n");
@@ -29,7 +33,7 @@ void add(char *hostname, char *author, char *title, char *filename) {
     add_out *out;
     FILE *stream;
     struct stat file_stat;
-    char *p;
+    char *extension;
 
     if (strlen(author) > MAX_AUTHOR_LENGTH) {
         fprintf(stderr, "Maximum length for author is %d\n",
@@ -43,8 +47,8 @@ void add(char *hostname, char *author, char *title, char *filename) {
         exit(EXIT_FAILURE);
     }
 
-    p = strrchr(filename, '.');
-    if (p == NULL || !(!strcmp(p+1, "pdf") || !strcmp(p+1, "doc"))) {
+    extension = strrchr(filename, '.');
+    if (extension == NULL || !(!strcmp(extension + 1, "pdf") || !strcmp(extension + 1, "doc"))) {
         fprintf(stderr, "Paper must have pdf or doc file extension\n");
         exit(EXIT_FAILURE);
     }
@@ -85,6 +89,12 @@ void add(char *hostname, char *author, char *title, char *filename) {
         }
         exit(EXIT_FAILURE);
 
+    }
+
+    if (!strcmp(extension + 1, "doc")) {
+        in.paper.type = MIME_TYPE_DOC;
+    } else {
+        in.paper.type = MIME_TYPE_PDF;
     }
 
     in.paper.author = author;
@@ -158,9 +168,10 @@ void detail(char *hostname, char *number) {
         exit(EXIT_FAILURE);
     }
 
-    printf("Author: ``%s''\nTitle:  ``%s''\n",
+    printf("Author: ``%s''\nTitle: ``%s''\nType: ``%s''\n",
            out->get_out_u.paper.author,
-           out->get_out_u.paper.title);
+           out->get_out_u.paper.title,
+           out->get_out_u.paper.type);
 
     clnt_destroy(client);
 
