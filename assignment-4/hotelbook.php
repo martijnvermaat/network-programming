@@ -15,6 +15,9 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST') {
 
     // Handle booking
 
+    // TODO: most PHP installations do automatic addslashes() on all input
+    //       and we don't need it in our protocol
+
     $show_form = false;
 
     $field_type = $_POST['type'];

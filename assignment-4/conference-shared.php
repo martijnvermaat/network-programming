@@ -123,8 +123,7 @@ function connect_to_gateway($address, $port) {
 
 function send_request($socket, $request) {
 
-    $r = $request['procedure']."\n";
-    $r .= implode("\n", $request['parameters'])."\n";
+    $r = implode("\n", array($request['procedure']) + $request['parameters'])."\n\n";
 
     $total_sent = 0;
 
@@ -150,5 +149,6 @@ function send_request($socket, $request) {
     return parse_response($response);
 
 }
+
 
 ?>
