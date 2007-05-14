@@ -64,7 +64,7 @@ void paper_listing(char *hostname) {
         paper_count++;
         printf("<p>Paper %d<br>Author: ``", *(papers->item.number));
         printHTML(papers->item.author);
-        printf("''<br>Title:  ``<a href=\"paperview.cgi?paper=%d\">", paper_count); // TODO: why not papers->item.number?
+        printf("''<br>Title:  ``<a href=\"paperview.cgi?paper=%d\">", *(papers->item.number));
         printHTML(papers->item.title);
         printf("</a>''</p>\n");
         papers = papers->next;
