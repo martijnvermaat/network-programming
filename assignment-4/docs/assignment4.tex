@@ -71,9 +71,9 @@ For the Conference Website we have written 3 CGI pages:
 \begin{center}
 % use packages: array
 \begin{tabular}{ l | p{9cm} }
-papers.c & a A page that shows the available papers\\ \hline
-paperview.c & A page that makes it possible to download papers\\ \hline
-paperload.c & A page that provides a form to upload papers\\
+\texttt{papers.c} & A page that shows the available papers\\ \hline
+\texttt{paperview.c} & A page that makes it possible to download papers\\ \hline
+\texttt{paperload.c} & A page that provides a form to upload papers\\
 \end{tabular}
 \end{center}
 
@@ -93,7 +93,7 @@ a non-existing paper, or omits sending the \textit{paper} variable, an error pag
 shown.
 
 Data sent using a \textsc{GET} request is provided to a CGI program in the environment
-variable \textsc{QUERY_STRING}. The contents of this variable is URL encoded, and should
+variable \textsc{QUERY\_STRING}. The contents of this variable is URL encoded, and should
 therefore be decoded first.
 
 \paragraph{paperload.c}
@@ -109,6 +109,59 @@ input in a format described by RFC 1867. This program checks if a \textsc{POST} 
 is done, and parses the standard input accordingly.
 
 \subsection{Hotel reservations}
+
+For the Hotel reservations we have written 6 PHP pages:
+\begin{center}
+% use packages: array
+\begin{tabular}{ l | p{9cm} }
+\texttt{site.php} & Configuration\\ \hline
+\texttt{conference-shared.php} & Contains functions used in the other pages\\ \hline
+\texttt{index.php} & Shows the index of the Conference website\\ \hline
+\texttt{hotellist.php} & Lists available rooms and their prices\\ \hline
+\texttt{participants.php} & Lists registered participants\\ \hline
+\texttt{hotelbook.php} & Provides a form for booking a room\\
+\end{tabular}
+\end{center}
+
+\paragraph{site.php}
+Contains some configuration options, such as the location of the CGI files
+and the  server.
+
+\paragraph{conference-shared.php}
+Because more than one page needs to connect to the hotel server gateway and
+send requests to it, this functionality is abstracted to some functions and
+shared by the other pages.
+
+The file also contains some functions that create the HTML layout for all
+pages.
+
+\paragraph{index.php}
+This page serves as a gateway to all other PHP and CGI pages and therefore
+only contains some links.
+
+\paragraph{hotellist.php}
+A connection to the hotel server gateway is made and a request for a listing
+of available rooms is made. The result is presented to the user with a
+convenient link for each type of room to the booking form.
+
+\paragraph{participants.php}
+Analoguous to the \texttt{hotellist.php} page, this page requests the hotel
+server gateway for a listing of registered participants and presents it to
+the user.
+
+\paragraph{hotelbook.php}
+The \texttt{hotelbook.php} page handles two types of HTTP requests. The first
+is an ordinary \textsc{GET} request which is responded to by showing a booking
+form. An optional query string parameter \texttt{type} is checked for a valid
+room type and if present, the relevant form field is initialized to this value.
+Submitting the form will result in a \textsc{POST} request being sent to the same
+page containing the form field values entered by the user.
+
+This \textsc{POST} request is the second type of request which is handled by
+the \texttt{hotelbook.php} page. All form field values are validated and if
+everything is correct, a booking request is sent to the hotel server gateway. If
+there was an error in the submitted form field values, the form is shown again
+with the relevant error message. Now the user can try again.
 
 
 \end{document}
