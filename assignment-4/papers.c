@@ -9,6 +9,32 @@
 #include <rpc/rpc.h>
 #include <time.h>
 
+
+void printHTML(char *s) {
+
+    int length = strlen(s);
+
+    while (length > 0) {
+
+        if (*s == '<') {
+            printf("&lt;");
+        } else if (*s == '&') {
+            printf("&amp;");
+        } else if (*s == '>') {
+            printf("&gt;");
+        } else {
+            putchar(*s);
+        }
+
+        s++;
+
+        length--;
+
+    }
+
+}
+
+
 void paper_listing(char *hostname) {
 
     CLIENT *client;
@@ -33,12 +59,14 @@ void paper_listing(char *hostname) {
     }
 
     papers = out->papers;
-    
+
     while (papers) {
         paper_count++;
-        printf("<p>Paper %d<br>Author: ``%s''<br>Title:  ``<a href=\"paperview.cgi?paper=%d\">%s</a>''</p>\n",
-                *(papers->item.number),
-                papers->item.author, paper_count, papers->item.title);
+        printf("<p>Paper %d<br>Author: ``", *(papers->item.number));
+        printHTML(papers->item.author);
+        printf("''<br>Title:  ``<a href=\"paperview.cgi?paper=%d\">", paper_count); // TODO: why not papers->item.number?
+        printHTML(papers->item.title);
+        printf("</a>''</p>\n");
         papers = papers->next;
     }
     
