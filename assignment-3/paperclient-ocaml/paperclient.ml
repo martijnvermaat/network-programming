@@ -83,6 +83,7 @@ let call_proc proc client arguments =
 
 (*
   Add our paper to the server.
+  TODO: actually decide the proper mimetype.
 *)
 let do_add hostname author title filename =
 
@@ -94,9 +95,10 @@ let do_add hostname author title filename =
           Sys_error e -> failwith ("Cannot read from file: " ^ e)
     in
     {paper = {
-       number = None;
-       author = author;
-       title  = title;
+       number  = None;
+       author  = author;
+       title   = title;
+       mime    = "application/pdf";
        content = Some content}}
   in
 

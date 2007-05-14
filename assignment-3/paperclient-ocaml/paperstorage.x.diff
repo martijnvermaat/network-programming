@@ -1,6 +1,15 @@
---- ../paperstorage.x	2007-04-06 19:23:08.000000000 +0200
-+++ paperstorage.x	2007-04-06 20:18:08.000000000 +0200
-@@ -56,7 +56,7 @@
+--- ../paperstorage.x	2007-05-14 16:26:11.000000000 +0200
++++ paperstorage.x	2007-05-14 16:31:15.000000000 +0200
+@@ -27,7 +27,7 @@
+     int    *number                       ;
+     string  author   <MAX_AUTHOR_LENGTH> ;
+     string  title    <MAX_TITLE_LENGTH>  ;
+-    string  type     <MAX_TYPE_LENGTH>   ;
++    string  type=>mime <MAX_TYPE_LENGTH> ;
+     data   *content                      ;
+ };
+ 
+@@ -58,7 +58,7 @@
  /* GET_PROC input and output types */
  
  struct get_in {

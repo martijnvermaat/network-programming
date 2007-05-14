@@ -168,7 +168,7 @@ void detail(char *hostname, char *number) {
         exit(EXIT_FAILURE);
     }
 
-    printf("Author: ``%s''\nTitle: ``%s''\nType: ``%s''\n",
+    printf("Author: ``%s''\nTitle:  ``%s''\nType:   ``%s''\n",
            out->get_out_u.paper.author,
            out->get_out_u.paper.title,
            out->get_out_u.paper.type);

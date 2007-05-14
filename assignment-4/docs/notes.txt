@@ -1,5 +1,2 @@
-- TO DO: Save Mime-Type of paper in paperstorage server.
-- TO DO: Print HTML safe output
-- cgi's gooien nog wel eens iets naar stderr (wat je weer
-  terug ziet in /var/log/apache2/error.log, dus misschien
-  is dat niet eens zo gek) === als het goed is gebeurt niet meer
+- TO DO: make sure every output is HTML safe
+- TO DO: try perl with Inline::C and standard rpcgen
