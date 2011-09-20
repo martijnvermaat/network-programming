@@ -1,0 +1,11 @@
+Network Programming
+===================
+
+Just a dump of what we did for the 2007 Network Programming course at the
+VU University Amsterdam.
+
+It contains various small programs communicating over a network and
+implemented in several different programming languages.
+
+Copyright (c) 2007, Thomas Veerman <thomas@minix3.org>
+Copyright (c) 2007, Martijn Vermaat <martijn@vermaat.name>
